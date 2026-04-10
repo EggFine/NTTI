@@ -65,7 +65,7 @@ components/           # UI 组件
 
 ## 致谢
 
-SBTI 原作者：B站 [@蛆肉儿串儿](https://space.bilibili.com/)
+SBTI 原作者：B站 [@Q肉儿串儿](https://space.bilibili.com/417038183)
 
 NTTI 基于 SBTI 体系、题库和人格改进优化而成。
 
