@@ -58,6 +58,7 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
   const [shareUrl, setShareUrl] = useState('');
   const [siteUrl, setSiteUrl] = useState('');
   const [showShareQR, setShowShareQR] = useState(false);
+  const [showPosterPicker, setShowPosterPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [posterTheme, setPosterTheme] = useState<PosterTheme>('light');
   const posterRef = useRef<HTMLDivElement>(null);
@@ -67,12 +68,15 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
     setSiteUrl(window.location.origin);
   }, [result]);
 
-  const handleSavePoster = useCallback(async () => {
-    if (!posterRef.current || saving) return;
+  const handleSavePoster = useCallback(async (theme: PosterTheme) => {
+    setPosterTheme(theme);
     setSaving(true);
+    // Wait a tick for the poster to re-render with new theme
+    await new Promise(r => setTimeout(r, 100));
+    if (!posterRef.current) { setSaving(false); return; }
     try {
       const html2canvas = (await import('html2canvas-pro')).default;
-      const bgColor = posterTheme === 'dark' ? '#0c1315' : '#faf9f7';
+      const bgColor = theme === 'dark' ? '#0c1315' : '#faf9f7';
       const canvas = await html2canvas(posterRef.current, {
         scale: 2,
         backgroundColor: bgColor,
@@ -87,8 +91,9 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
       console.error('Failed to save poster:', e);
     } finally {
       setSaving(false);
+      setShowPosterPicker(false);
     }
-  }, [saving, finalType.code, finalType.cn, posterTheme]);
+  }, [finalType.code, finalType.cn]);
 
   useEffect(() => {
     const target = result.bestNormal.similarity;
@@ -114,17 +119,12 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
       <div className="max-w-2xl mx-auto px-4 sm:px-5 py-10 sm:py-12 md:py-16">
 
         {/* ════ HERO CARD ════ */}
-        <motion.div
-          className="glass rounded-2xl p-5 sm:p-6 md:p-8"
-          {...fadeUp(0)}
-        >
+        <motion.div className="glass rounded-2xl p-5 sm:p-6 md:p-8" {...fadeUp(0)}>
           <div className="flex flex-col items-center text-center gap-5">
-            {/* kicker */}
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/8 text-[11px] text-accent font-medium">
               {modeKicker}
             </span>
 
-            {/* type code + ring side by side on desktop */}
             <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full">
               <div className="flex-1 text-center md:text-left space-y-2">
                 <motion.h1
@@ -170,7 +170,6 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
           )}
         </motion.div>
 
-        {/* DRUNK secondary */}
         {secondaryType && (
           <motion.div className="mt-3 glass rounded-xl p-4 flex items-center gap-3 flex-wrap" {...fadeUp(0.3)}>
             <span className="text-xs text-muted">常规匹配（被酒精覆盖）：</span>
@@ -199,7 +198,6 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
           </div>
 
           <div className="flex flex-col items-center gap-4">
-            {/* action buttons */}
             <div className="flex items-center gap-3 flex-wrap justify-center">
               <motion.button
                 onClick={() => setShowShareQR(!showShareQR)}
@@ -215,37 +213,20 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
               </motion.button>
 
               <motion.button
-                onClick={handleSavePoster}
-                disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass text-sm text-foreground/70 cursor-pointer hover:text-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: saving ? 1 : 1.03 }}
-                whileTap={{ scale: saving ? 1 : 0.97 }}
+                onClick={() => setShowPosterPicker(!showPosterPicker)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass text-sm text-foreground/70 cursor-pointer hover:text-foreground/90 transition-colors"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {saving ? '生成中...' : '保存海报'}
+                {showPosterPicker ? '收起' : '保存海报'}
               </motion.button>
             </div>
 
-            {/* poster theme selector */}
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>海报风格：</span>
-              <button
-                onClick={() => setPosterTheme('light')}
-                className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${posterTheme === 'light' ? 'border-accent text-accent bg-accent/8' : 'border-card-border text-muted hover:text-foreground/70'}`}
-              >
-                亮色
-              </button>
-              <button
-                onClick={() => setPosterTheme('dark')}
-                className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${posterTheme === 'dark' ? 'border-accent text-accent bg-accent/8' : 'border-card-border text-muted hover:text-foreground/70'}`}
-              >
-                暗色
-              </button>
-            </div>
-
+            {/* share QR */}
             <AnimatePresence>
               {showShareQR && shareUrl && (
                 <motion.div
@@ -261,6 +242,67 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
                   <p className="text-[11px] text-muted text-center max-w-xs leading-relaxed">
                     朋友扫码可查看你的人格结果，并被引导去测试
                   </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* poster theme picker with previews */}
+            <AnimatePresence>
+              {showPosterPicker && (
+                <motion.div
+                  className="w-full max-w-sm"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                >
+                  <p className="text-xs text-muted text-center mb-3">选择海报风格</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['light', 'dark'] as const).map(theme => (
+                      <button
+                        key={theme}
+                        onClick={() => handleSavePoster(theme)}
+                        disabled={saving}
+                        className={`
+                          group relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          ${posterTheme === theme && saving ? 'border-accent' : 'border-card-border hover:border-accent/50'}
+                        `}
+                      >
+                        {/* mini preview */}
+                        <div className={`p-3 ${theme === 'dark' ? 'bg-[#0c1315]' : 'bg-[#faf9f7]'}`}>
+                          <div className="text-center space-y-1.5">
+                            <div className={`text-[8px] ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>NTTI</div>
+                            <div className={`text-sm font-bold font-display italic ${theme === 'dark' ? 'text-teal-400' : 'text-teal-700'}`}>
+                              {finalType.code}
+                            </div>
+                            <div className={`text-[9px] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {finalType.cn}
+                            </div>
+                            <div className={`text-[10px] font-mono font-bold ${theme === 'dark' ? 'text-teal-400' : 'text-teal-600'}`}>
+                              {result.bestNormal.similarity}%
+                            </div>
+                            {/* mini dimension grid */}
+                            <div className="grid grid-cols-5 gap-[2px] px-1">
+                              {Object.values(result.levels).map((l, i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1 rounded-full ${
+                                    l === 'H' ? (theme === 'dark' ? 'bg-teal-500/60' : 'bg-teal-500/40') :
+                                    l === 'M' ? (theme === 'dark' ? 'bg-amber-500/50' : 'bg-amber-500/30') :
+                                    (theme === 'dark' ? 'bg-sky-500/50' : 'bg-sky-500/30')
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="py-2 text-center text-xs text-foreground/70 bg-card-bg">
+                          {saving && posterTheme === theme ? '生成中...' : theme === 'light' ? '亮色' : '暗色'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

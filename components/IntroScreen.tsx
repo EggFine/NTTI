@@ -46,6 +46,7 @@ const SAMPLE_TYPES = [
 
 interface IntroScreenProps {
   onStart: () => void;
+  onDebug: () => void;
 }
 
 function ParticleField() {
@@ -127,7 +128,7 @@ const fadeUp = {
   },
 };
 
-export function IntroScreen({ onStart }: IntroScreenProps) {
+export function IntroScreen({ onStart, onDebug }: IntroScreenProps) {
   const siteUrl = useSiteUrl();
 
   return (
@@ -268,16 +269,27 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
         </motion.div>
 
         {/* CTA */}
-        <motion.button
-          variants={fadeUp}
-          onClick={onStart}
-          className="mt-8 px-10 sm:px-14 py-3.5 sm:py-4 rounded-full bg-accent text-white font-medium text-sm sm:text-base cursor-pointer"
-          whileHover={{ scale: 1.04, boxShadow: "0 0 32px var(--glow)" }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        >
-          开始测试
-        </motion.button>
+        <motion.div variants={fadeUp} className="mt-8 flex items-center gap-3">
+          <motion.button
+            onClick={onStart}
+            className="px-10 sm:px-14 py-3.5 sm:py-4 rounded-full bg-accent text-white font-medium text-sm sm:text-base cursor-pointer"
+            whileHover={{ scale: 1.04, boxShadow: "0 0 32px var(--glow)" }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          >
+            开始测试
+          </motion.button>
+          <motion.button
+            onClick={onDebug}
+            className="px-4 py-3.5 sm:py-4 rounded-full glass text-sm text-muted cursor-pointer hover:text-foreground/70 transition-colors"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            title="随机查看一个人格结果"
+          >
+            🎲
+          </motion.button>
+        </motion.div>
 
         {/* QR code */}
         {siteUrl && (

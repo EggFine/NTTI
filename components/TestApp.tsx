@@ -4,7 +4,9 @@ import { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Screen, Question, SpecialQuestion, TestResult } from '@/lib/types';
 import { buildSession, buildExtraQuestions, computeResult, EXTRA_ROUND_PROMPTS } from '@/lib/scoring';
-import { selectRandom } from '@/lib/utils';
+import { selectRandom, shuffle } from '@/lib/utils';
+import { PERSONALITY_TYPES } from '@/lib/data/personalities';
+import { DIMENSION_IDS } from '@/lib/data/dimensions';
 import { IntroScreen } from './IntroScreen';
 import { TestScreen } from './TestScreen';
 import { ResultScreen } from './ResultScreen';
@@ -77,6 +79,33 @@ export function TestApp() {
     window.scrollTo({ top: 0 });
   }, []);
 
+  const handleDebug = useCallback(() => {
+    // Pick a random personality type and generate a fake result that matches it
+    const type = shuffle([...PERSONALITY_TYPES])[0];
+    const pattern = type.pattern.replace(/-/g, '').split('') as ('L' | 'M' | 'H')[];
+    const scoreMap = { L: 3, M: 6, H: 8 };
+    const rawScores = {} as Record<string, number>;
+    const levels = {} as Record<string, string>;
+    DIMENSION_IDS.forEach((dim, i) => {
+      levels[dim] = pattern[i];
+      rawScores[dim] = scoreMap[pattern[i]];
+    });
+    const fakeResult: TestResult = {
+      rawScores: rawScores as TestResult['rawScores'],
+      levels: levels as TestResult['levels'],
+      finalType: type,
+      bestNormal: { ...type, distance: 0, exact: 15, similarity: 95 },
+      modeKicker: '随机预览',
+      badge: `预览模式 · ${type.code}`,
+      sub: '这是随机生成的结果预览，不代表真实测试。',
+      special: false,
+      secondaryType: null,
+    };
+    setResult(fakeResult);
+    setScreen('result');
+    window.scrollTo({ top: 0 });
+  }, []);
+
   return (
     <>
       <div className="fixed top-4 right-4 z-50">
@@ -92,7 +121,7 @@ export function TestApp() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <IntroScreen onStart={handleStart} />
+            <IntroScreen onStart={handleStart} onDebug={handleDebug} />
           </motion.div>
         )}
         {screen === 'test' && (
