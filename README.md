@@ -1,5 +1,7 @@
 # NTTI - 不太正经人格测试
 
+**在线体验：[ntti.eggfine.com](https://ntti.eggfine.com/)**
+
 基于 SBTI 体系改进优化的 15 维度人格测试。通过 5 大模型、30 道随机题目，匹配 30+ 种不太正经的人格类型。
 
 > SBTI 已经过时，NTTI 来了。
@@ -68,6 +70,10 @@ components/           # UI 组件
 SBTI 原作者：B站 [@Q肉儿串儿](https://space.bilibili.com/417038183)
 
 NTTI 基于 SBTI 体系、题库和人格改进优化而成。
+
+## 部署
+
+托管于 [Cloudflare Pages](https://pages.cloudflare.com/)。
 
 ## License
 

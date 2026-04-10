@@ -114,13 +114,23 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           开始测试
         </button>
 
-        {/* ── Bottom hint ── */}
-        <p className="text-[11px] text-muted/35 mt-5 max-w-xs leading-relaxed">
-          仅供娱乐 · 不具备任何科学依据
-        </p>
-        <p className="text-[10px] text-muted/30 mt-2 max-w-sm leading-relaxed">
-          SBTI 原作者 B站@蛆肉儿串儿，NTTI 基于 SBTI 体系、题库和人格改进优化而成
-        </p>
+        {/* ── Bottom ── */}
+        <div className="mt-8 pt-6 border-t border-divider w-full max-w-sm space-y-2.5 text-center">
+          <p className="text-[11px] text-muted/40">
+            仅供娱乐 · 不具备任何科学依据
+          </p>
+          <p className="text-[10px] text-muted/30 leading-relaxed">
+            SBTI 原作者 B站@Q肉儿串儿，NTTI 基于 SBTI 体系、题库和人格改进优化而成
+          </p>
+          <p className="text-[10px] text-muted/25 flex items-center justify-center gap-1">
+            Powered by
+            <svg className="w-3 h-3 inline-block" viewBox="0 0 32 32" fill="currentColor">
+              <path d="M17.87 13.47l-12.65 5.6a1.16 1.16 0 01-.47.1 1.08 1.08 0 01-.72-.27 1.15 1.15 0 01-.36-1.1l2.17-9.43a3.24 3.24 0 012.88-2.5l12.33-1.03a.53.53 0 01.42.15.56.56 0 01.14.43l-.52 5.15a3.24 3.24 0 01-3.22 2.9z" />
+              <path d="M28.93 13.67L16.6 14.7a3.24 3.24 0 00-2.88 2.5L11.55 26.63a1.15 1.15 0 00.36 1.1 1.08 1.08 0 001.19.17l12.65-5.6a3.24 3.24 0 001.96-2.47l.52-5.15a.56.56 0 00-.14-.43.53.53 0 00-.42-.15l-.74.06z" />
+            </svg>
+            Cloudflare Pages
+          </p>
+        </div>
       </div>
     </div>
   );
