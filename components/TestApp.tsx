@@ -18,6 +18,7 @@ export function TestApp() {
   const [currentBatchQuestions, setCurrentBatchQuestions] = useState<(Question | SpecialQuestion)[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<TestResult | null>(null);
+  const [isDebug, setIsDebug] = useState(false);
   const [extraRound, setExtraRound] = useState(0);
   const [extraPrompt, setExtraPrompt] = useState('');
 
@@ -27,6 +28,7 @@ export function TestApp() {
     setCurrentBatchQuestions(questions);
     setAnswers({});
     setResult(null);
+    setIsDebug(false);
     setExtraRound(0);
     setExtraPrompt('');
     setScreen('test');
@@ -102,6 +104,8 @@ export function TestApp() {
       secondaryType: null,
     };
     setResult(fakeResult);
+    // Only show share section if ?debug is in URL
+    setIsDebug(!window.location.search.includes('debug'));
     setScreen('result');
     window.scrollTo({ top: 0 });
   }, []);
@@ -147,7 +151,7 @@ export function TestApp() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ResultScreen result={result} onRestart={handleRestart} />
+            <ResultScreen result={result} onRestart={handleRestart} hideShare={isDebug} />
           </motion.div>
         )}
       </AnimatePresence>

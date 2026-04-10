@@ -12,6 +12,7 @@ import type { PosterTheme } from './ResultPoster';
 interface ResultScreenProps {
   result: TestResult;
   onRestart: () => void;
+  hideShare?: boolean;
 }
 
 function SimilarityRing({ value }: { value: number }) {
@@ -51,7 +52,7 @@ const fadeUp = (delay: number) => ({
   transition: { type: 'spring' as const, stiffness: 260, damping: 28, delay },
 });
 
-export function ResultScreen({ result, onRestart }: ResultScreenProps) {
+export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps) {
   const { finalType, modeKicker, badge, sub, special, secondaryType } = result;
   const [displaySimilarity, setDisplaySimilarity] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -190,7 +191,7 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
         </motion.div>
 
         {/* ════ SHARE ════ */}
-        <motion.div className="mt-8" {...fadeUp(0.45)}>
+        {!hideShare && <motion.div className="mt-8" {...fadeUp(0.45)}>
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-divider" />
             <h2 className="text-sm font-medium text-muted tracking-wide px-2">分享结果</h2>
@@ -307,7 +308,7 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
+        </motion.div>}
 
         {/* ════ FOOTER ════ */}
         <motion.div className="mt-10 text-center space-y-5" {...fadeUp(0.55)}>
@@ -328,7 +329,7 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
-            再测一次
+            {hideShare ? '返回主页' : '再测一次'}
           </motion.button>
         </motion.div>
       </div>
