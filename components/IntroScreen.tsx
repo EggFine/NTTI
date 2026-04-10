@@ -84,12 +84,12 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           </div>
           <div className="w-px h-8 bg-divider" />
           <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">30+</div>
+            <div className="text-xl font-bold font-mono text-foreground/80">40+</div>
             <div className="text-[10px] text-muted mt-0.5">人格类型</div>
           </div>
           <div className="w-px h-8 bg-divider" />
           <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">65+</div>
+            <div className="text-xl font-bold font-mono text-foreground/80">100+</div>
             <div className="text-[10px] text-muted mt-0.5">随机题库</div>
           </div>
           <div className="w-px h-8 bg-divider" />
