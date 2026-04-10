@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { TestResult } from '@/lib/types';
+import { encodeShareUrl } from '@/lib/share';
 import { DimensionChart } from './DimensionChart';
+import { QRCode } from './QRCode';
+import { ResultPoster } from './ResultPoster';
+import type { PosterTheme } from './ResultPoster';
 
 interface ResultScreenProps {
   result: TestResult;
@@ -16,7 +20,7 @@ function SimilarityRing({ value }: { value: number }) {
   const offset = circumference - (value / 100) * circumference;
 
   return (
-    <div className="relative w-32 h-32 md:w-36 md:h-36">
+    <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r={r} fill="none" stroke="var(--ring-track)" strokeWidth="4.5" />
         <motion.circle
@@ -51,6 +55,40 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
   const { finalType, modeKicker, badge, sub, special, secondaryType } = result;
   const [displaySimilarity, setDisplaySimilarity] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [siteUrl, setSiteUrl] = useState('');
+  const [showShareQR, setShowShareQR] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [posterTheme, setPosterTheme] = useState<PosterTheme>('light');
+  const posterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setShareUrl(encodeShareUrl(result, window.location.origin));
+    setSiteUrl(window.location.origin);
+  }, [result]);
+
+  const handleSavePoster = useCallback(async () => {
+    if (!posterRef.current || saving) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const bgColor = posterTheme === 'dark' ? '#0c1315' : '#faf9f7';
+      const canvas = await html2canvas(posterRef.current, {
+        scale: 2,
+        backgroundColor: bgColor,
+        useCORS: true,
+        logging: false,
+      });
+      const link = document.createElement('a');
+      link.download = `NTTI-${finalType.code}-${finalType.cn}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      console.error('Failed to save poster:', e);
+    } finally {
+      setSaving(false);
+    }
+  }, [saving, finalType.code, finalType.cn, posterTheme]);
 
   useEffect(() => {
     const target = result.bestNormal.similarity;
@@ -71,13 +109,13 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
 
   return (
     <div className="min-h-screen relative z-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-accent/[0.04] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(500px,90vw)] h-[min(350px,60vw)] bg-accent/[0.04] rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-2xl mx-auto px-5 py-12 md:py-16">
+      <div className="max-w-2xl mx-auto px-4 sm:px-5 py-10 sm:py-12 md:py-16">
 
         {/* ════ HERO CARD ════ */}
         <motion.div
-          className="glass rounded-2xl p-6 md:p-8"
+          className="glass rounded-2xl p-5 sm:p-6 md:p-8"
           {...fadeUp(0)}
         >
           <div className="flex flex-col items-center text-center gap-5">
@@ -90,7 +128,7 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
             <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full">
               <div className="flex-1 text-center md:text-left space-y-2">
                 <motion.h1
-                  className="text-5xl md:text-7xl font-display italic tracking-tight gradient-text leading-none py-2 px-2"
+                  className="text-4xl sm:text-5xl md:text-7xl font-display italic tracking-tight gradient-text leading-none py-2 px-2"
                   initial={{ opacity: 0, scale: 0.9, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
@@ -152,8 +190,85 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
           <DimensionChart levels={result.levels} rawScores={result.rawScores} />
         </motion.div>
 
+        {/* ════ SHARE ════ */}
+        <motion.div className="mt-8" {...fadeUp(0.45)}>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1 bg-divider" />
+            <h2 className="text-sm font-medium text-muted tracking-wide px-2">分享结果</h2>
+            <div className="h-px flex-1 bg-divider" />
+          </div>
+
+          <div className="flex flex-col items-center gap-4">
+            {/* action buttons */}
+            <div className="flex items-center gap-3 flex-wrap justify-center">
+              <motion.button
+                onClick={() => setShowShareQR(!showShareQR)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass text-sm text-foreground/70 cursor-pointer hover:text-foreground/90 transition-colors"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                {showShareQR ? '收起二维码' : '分享二维码'}
+              </motion.button>
+
+              <motion.button
+                onClick={handleSavePoster}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass text-sm text-foreground/70 cursor-pointer hover:text-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: saving ? 1 : 1.03 }}
+                whileTap={{ scale: saving ? 1 : 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {saving ? '生成中...' : '保存海报'}
+              </motion.button>
+            </div>
+
+            {/* poster theme selector */}
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span>海报风格：</span>
+              <button
+                onClick={() => setPosterTheme('light')}
+                className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${posterTheme === 'light' ? 'border-accent text-accent bg-accent/8' : 'border-card-border text-muted hover:text-foreground/70'}`}
+              >
+                亮色
+              </button>
+              <button
+                onClick={() => setPosterTheme('dark')}
+                className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${posterTheme === 'dark' ? 'border-accent text-accent bg-accent/8' : 'border-card-border text-muted hover:text-foreground/70'}`}
+              >
+                暗色
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {showShareQR && shareUrl && (
+                <motion.div
+                  className="flex flex-col items-center gap-3"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                >
+                  <div className="glass rounded-2xl p-4">
+                    <QRCode value={shareUrl} size={160} />
+                  </div>
+                  <p className="text-[11px] text-muted text-center max-w-xs leading-relaxed">
+                    朋友扫码可查看你的人格结果，并被引导去测试
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
         {/* ════ FOOTER ════ */}
-        <motion.div className="mt-10 text-center space-y-5" {...fadeUp(0.5)}>
+        <motion.div className="mt-10 text-center space-y-5" {...fadeUp(0.55)}>
           <div className="space-y-1.5">
             <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
               {special
@@ -175,6 +290,9 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
           </motion.button>
         </motion.div>
       </div>
+
+      {/* hidden poster for html2canvas */}
+      {shareUrl && <ResultPoster ref={posterRef} result={result} shareUrl={shareUrl} siteUrl={siteUrl} theme={posterTheme} />}
     </div>
   );
 }

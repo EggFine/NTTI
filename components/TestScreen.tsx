@@ -82,14 +82,14 @@ export function TestScreen({ questions: initialQuestions, onComplete }: TestScre
   return (
     <div className="min-h-screen flex flex-col relative z-10">
       {/* top progress */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-divider px-6 py-4">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-divider px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-2xl mx-auto">
           <ProgressBar current={totalAnswered} total={questions.length} />
         </div>
       </div>
 
       {/* question area */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex-1 flex items-center justify-center px-3 sm:px-6 py-8 sm:py-12">
         <AnimatePresence mode="wait">
           <QuestionCard
             key={currentQuestion.id}
@@ -103,17 +103,17 @@ export function TestScreen({ questions: initialQuestions, onComplete }: TestScre
       </div>
 
       {/* bottom nav */}
-      <div className="sticky bottom-0 z-20 bg-background/80 backdrop-blur-md border-t border-divider px-6 py-3">
+      <div className="sticky bottom-0 z-20 bg-background/80 backdrop-blur-md border-t border-divider px-4 sm:px-6 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
             onClick={() => currentIndex > 0 && goTo(currentIndex - 1)}
             disabled={currentIndex === 0}
-            className="text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="text-xs sm:text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             ← 上一题
           </button>
 
-          <span className="text-xs text-muted/60 font-mono">
+          <span className="text-xs text-muted/60 font-mono hidden sm:inline">
             按 A / B / C 快速选择
           </span>
 
@@ -128,7 +128,7 @@ export function TestScreen({ questions: initialQuestions, onComplete }: TestScre
               }
             }}
             disabled={answers[currentQuestion.id] === undefined}
-            className="text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="text-xs sm:text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             {currentIndex === questions.length - 1 ? '查看结果 →' : '下一题 →'}
           </button>

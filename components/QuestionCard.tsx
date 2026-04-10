@@ -16,7 +16,7 @@ const OPTION_CODES = ['A', 'B', 'C', 'D'];
 export function QuestionCard({ question, index, total, selected, onSelect }: QuestionCardProps) {
   return (
     <motion.div
-      className="w-full max-w-2xl mx-auto glass rounded-2xl p-6 md:p-8"
+      className="w-full max-w-2xl mx-auto glass rounded-2xl p-4 sm:p-6 md:p-8"
       initial={{ opacity: 0, x: 50, scale: 0.97 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: -50, scale: 0.97 }}

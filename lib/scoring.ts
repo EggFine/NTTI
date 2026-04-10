@@ -122,3 +122,35 @@ export function computeResult(
     secondaryType,
   };
 }
+
+/** Reconstruct a partial result from shared data (for /r page) */
+export function reconstructFromShare(
+  typeCode: string,
+  similarity: number,
+  levels: Record<DimensionId, DimensionLevel>,
+  exact: number,
+  isSpecial: boolean,
+) {
+  // Find the matching personality type
+  let matchedType = PERSONALITY_TYPES.find(t => t.code === typeCode);
+  if (!matchedType) {
+    if (typeCode === 'DRUNK') matchedType = DRUNK_TYPE;
+    else if (typeCode === 'HHHH') matchedType = FALLBACK_TYPE;
+    else return null;
+  }
+
+  // Reconstruct raw scores from levels (approximate: L→2, M→4, H→5)
+  const rawScores = {} as Record<DimensionId, number>;
+  for (const dim of DIMENSION_IDS) {
+    rawScores[dim] = levels[dim] === 'L' ? 2 : levels[dim] === 'M' ? 4 : 5;
+  }
+
+  return {
+    finalType: matchedType,
+    similarity,
+    exact,
+    levels,
+    rawScores,
+    special: isSpecial,
+  };
+}
