@@ -117,7 +117,40 @@ NTTI 基于 SBTI 体系、题库和人格改进优化而成。
 
 ## 部署
 
-托管于 [Cloudflare Pages](https://pages.cloudflare.com/)。
+官方站点托管于 [Cloudflare Pages](https://pages.cloudflare.com/)。
+
+### 使用 Release 产物部署
+
+1. 前往 [Releases](https://github.com/EggFine/NTTI/releases) 下载最新的 `ntti-source-*.zip`
+2. 解压后安装依赖并构建：
+   ```bash
+   bun install
+   bun run build
+   bun run start
+   ```
+
+### 从源码部署到 Cloudflare Pages
+
+1. Fork 本仓库
+2. 在 Cloudflare Pages 创建项目，关联 GitHub 仓库
+3. 构建设置：框架预设 `Next.js`，构建命令 `bun run build`
+4. 每次 push 自动部署
+
+### 从源码部署到 Vercel
+
+1. Fork 本仓库
+2. 在 [Vercel](https://vercel.com) 导入项目
+3. 框架会自动识别为 Next.js，无需额外配置
+
+## CI/CD
+
+每次 push 到 `main` 分支自动触发 GitHub Actions：
+
+- Bun 安装依赖 + 构建
+- 打包构建产物和源码为 zip
+- 自动创建 [GitHub Release](https://github.com/EggFine/NTTI/releases)（tag 格式：`v日期-commit`）
+
+也可在 Actions 页面手动触发，指定自定义版本号。
 
 ## License
 
