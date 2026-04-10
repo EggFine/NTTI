@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import QRCodeLib from 'qrcode';
 
 interface QRCodeProps {
@@ -13,16 +13,23 @@ interface QRCodeProps {
 
 export function QRCode({ value, size = 160, className = '', colorMode = 'auto' }: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [systemDark, setSystemDark] = useState(false);
+
+  // Watch for dark class changes on <html>
+  useEffect(() => {
+    if (colorMode !== 'auto') return;
+    setSystemDark(document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setSystemDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [colorMode]);
 
   useEffect(() => {
     if (!canvasRef.current || !value) return;
 
-    let isDark: boolean;
-    if (colorMode === 'auto') {
-      isDark = document.documentElement.classList.contains('dark');
-    } else {
-      isDark = colorMode === 'dark';
-    }
+    const isDark = colorMode === 'auto' ? systemDark : colorMode === 'dark';
 
     QRCodeLib.toCanvas(canvasRef.current, value, {
       width: size,
@@ -33,7 +40,7 @@ export function QRCode({ value, size = 160, className = '', colorMode = 'auto' }
       },
       errorCorrectionLevel: 'M',
     });
-  }, [value, size, colorMode]);
+  }, [value, size, colorMode, systemDark]);
 
   return (
     <canvas
