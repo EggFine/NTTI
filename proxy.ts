@@ -37,6 +37,8 @@ export function proxy(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+export const runtime = 'edge';
+
 export const config = {
   matcher: ['/((?!_next|api|favicon\\.ico|.*\\..*).*)'],
 };
