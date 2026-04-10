@@ -3,7 +3,9 @@
 import { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Question, SpecialQuestion } from '@/lib/types';
-import { SPECIAL_QUESTIONS } from '@/lib/data/questions';
+import { useI18n } from '@/lib/i18n/context';
+import { t as tpl } from '@/lib/i18n';
+import { getLocaleData } from '@/lib/data/locale';
 import { ProgressBar } from './ProgressBar';
 import { QuestionCard } from './QuestionCard';
 
@@ -14,13 +16,13 @@ interface TestScreenProps {
 }
 
 export function TestScreen({ questions: initialQuestions, onComplete, extraPrompt }: TestScreenProps) {
+  const { locale, dict } = useI18n();
+  const data = getLocaleData(locale);
+
   const [questions, setQuestions] = useState(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showPromptCard, setShowPromptCard] = useState(!!extraPrompt);
-
-  // No reset effect needed — parent uses key={`test-${extraRound}`}
-  // which fully remounts this component on each extra round.
 
   const currentQuestion = questions[currentIndex];
   const totalAnswered = Object.keys(answers).filter(k =>
@@ -38,7 +40,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
     setAnswers(newAnswers);
 
     if (currentQuestion.id === 'drink_gate_q1' && value === 3) {
-      const trigger = SPECIAL_QUESTIONS.find(q => q.kind === 'drink_trigger');
+      const trigger = data.specialQuestions.find(q => q.kind === 'drink_trigger');
       if (trigger && !questions.some(q => q.id === trigger.id)) {
         const updated = [...questions];
         updated.splice(currentIndex + 1, 0, trigger);
@@ -63,7 +65,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
         onComplete(newAnswers, questions);
       }
     }, 400);
-  }, [currentQuestion, currentIndex, questions, answers, onComplete, goTo]);
+  }, [currentQuestion, currentIndex, questions, answers, onComplete, goTo, data.specialQuestions]);
 
   if (!currentQuestion) return null;
 
@@ -89,7 +91,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
           </p>
 
           <p className="text-xs text-muted">
-            还有 {questions.length} 道补充题
+            {tpl(dict.test.extraRemaining, { n: questions.length })}
           </p>
 
           <motion.button
@@ -99,7 +101,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
-            开始吧
+            {dict.test.letsGo}
           </motion.button>
         </motion.div>
       </div>
@@ -137,11 +139,11 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
             disabled={currentIndex === 0}
             className="text-xs sm:text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            ← 上一题
+            {dict.test.prevQuestion}
           </button>
 
           <span className="text-xs text-muted/60 font-mono hidden sm:inline">
-            按 A / B / C 快速选择
+            {dict.test.keyboardHint}
           </span>
 
           <button
@@ -157,7 +159,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
             disabled={answers[currentQuestion.id] === undefined}
             className="text-xs sm:text-sm text-muted hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            {currentIndex === questions.length - 1 ? '查看结果 →' : '下一题 →'}
+            {currentIndex === questions.length - 1 ? dict.test.viewResult : dict.test.nextQuestion}
           </button>
         </div>
       </div>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDict } from '@/lib/i18n/context';
 
 export function ThemeToggle() {
+  const dict = useDict();
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -24,7 +26,7 @@ export function ThemeToggle() {
   return (
     <motion.button
       onClick={toggle}
-      aria-label={dark ? '切换到亮色模式' : '切换到暗色模式'}
+      aria-label={dark ? dict.theme.switchToLight : dict.theme.switchToDark}
       className="
         relative w-9 h-9 flex items-center justify-center rounded-full
         glass cursor-pointer

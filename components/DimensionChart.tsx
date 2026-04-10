@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { DimensionId, DimensionLevel } from '@/lib/types';
-import { MODELS, DIMENSION_MAP } from '@/lib/data/dimensions';
+import { useI18n } from '@/lib/i18n/context';
+import { getLocaleData } from '@/lib/data/locale';
 
 interface DimensionChartProps {
   levels: Record<DimensionId, DimensionLevel>;
@@ -28,7 +29,7 @@ const LEVEL_BAR_COLOR: Record<DimensionLevel, string> = {
   H: 'bg-accent/60 dark:bg-accent/40',
 };
 
-const SHORT_NAMES: Record<DimensionId, string> = {
+const SHORT_NAMES_ZH: Record<DimensionId, string> = {
   S1: '自尊', S2: '清晰度', S3: '价值观',
   E1: '安全感', E2: '投入度', E3: '边界',
   A1: '世界观', A2: '规则', A3: '意义感',
@@ -36,11 +37,20 @@ const SHORT_NAMES: Record<DimensionId, string> = {
   So1: '主动性', So2: '边界感', So3: '真实度',
 };
 
+const SHORT_NAMES_EN: Record<DimensionId, string> = {
+  S1: 'Esteem', S2: 'Clarity', S3: 'Values',
+  E1: 'Security', E2: 'Investment', E3: 'Boundary',
+  A1: 'Worldview', A2: 'Rules', A3: 'Meaning',
+  Ac1: 'Drive', Ac2: 'Decision', Ac3: 'Execution',
+  So1: 'Initiative', So2: 'Boundary', So3: 'Authenticity',
+};
+
 function DimCell({
-  dimId, level, score, isExpanded, onClick, idx,
+  dimId, level, score, isExpanded, onClick, idx, shortName, scoreLabel,
 }: {
   dimId: DimensionId; level: DimensionLevel; score: number;
   isExpanded: boolean; onClick: () => void; idx: number;
+  shortName: string; scoreLabel: string;
 }) {
   return (
     <motion.button
@@ -58,7 +68,7 @@ function DimCell({
       whileTap={{ scale: 0.97 }}
     >
       <div className="text-[10px] sm:text-xs text-muted mb-1.5 truncate leading-none">
-        {SHORT_NAMES[dimId]}
+        {shortName}
       </div>
       <div className="flex items-center justify-between">
         <span className={`
@@ -82,6 +92,10 @@ function DimCell({
 }
 
 export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
+  const { locale, dict } = useI18n();
+  const data = getLocaleData(locale);
+  const SHORT_NAMES = locale === 'zh' ? SHORT_NAMES_ZH : SHORT_NAMES_EN;
+
   const [expandedDim, setExpandedDim] = useState<DimensionId | null>(null);
 
   const toggle = (dimId: DimensionId) =>
@@ -92,10 +106,10 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
 
   return (
     <div className="space-y-3">
-      {/* ── Desktop: 5-col grid (md+) ── */}
+      {/* Desktop: 5-col grid (md+) */}
       <div className="hidden md:block">
         <div className="grid grid-cols-5 gap-2">
-          {MODELS.map((model, mi) => (
+          {data.models.map((model, mi) => (
             <motion.div
               key={model.id}
               className="text-center py-1.5"
@@ -104,13 +118,13 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
               transition={{ delay: mi * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
             >
               <span className="text-xs font-medium text-muted">
-                {model.name.replace('模型', '')}
+                {locale === 'zh' ? model.name.replace('模型', '') : model.name.replace(' Model', '')}
               </span>
             </motion.div>
           ))}
 
           {[0, 1, 2].map(row =>
-            MODELS.map(model => {
+            data.models.map(model => {
               const dimId = model.dimensions[row];
               const idx = gridIdx++;
               return (
@@ -122,6 +136,8 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
                   isExpanded={expandedDim === dimId}
                   onClick={() => toggle(dimId)}
                   idx={idx}
+                  shortName={SHORT_NAMES[dimId]}
+                  scoreLabel={dict.dimension.score}
                 />
               );
             })
@@ -129,9 +145,9 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
         </div>
       </div>
 
-      {/* ── Mobile: model-grouped list (<md) ── */}
+      {/* Mobile: model-grouped list (<md) */}
       <div className="md:hidden space-y-4">
-        {MODELS.map((model, mi) => (
+        {data.models.map((model, mi) => (
           <motion.div
             key={model.id}
             initial={{ opacity: 0, y: 12 }}
@@ -154,6 +170,8 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
                     isExpanded={expandedDim === dimId}
                     onClick={() => toggle(dimId)}
                     idx={idx}
+                    shortName={SHORT_NAMES[dimId]}
+                    scoreLabel={dict.dimension.score}
                   />
                 );
               })}
@@ -165,7 +183,7 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
       {/* expanded panel */}
       <AnimatePresence mode="wait">
         {expandedDim && (() => {
-          const dim = DIMENSION_MAP[expandedDim];
+          const dim = data.dimensionMap[expandedDim];
           const level = levels[expandedDim];
           return (
             <motion.div
@@ -179,7 +197,7 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
               <div className="flex items-center justify-between mb-2 gap-2">
                 <span className="text-sm font-medium text-foreground/80">{dim.name}</span>
                 <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${LEVEL_BG[level]} ${LEVEL_TEXT[level]}`}>
-                  {level} · {rawScores[expandedDim]}分
+                  {level} · {rawScores[expandedDim]}{dict.dimension.score}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-muted leading-relaxed">{dim.levels[level]}</p>
@@ -188,7 +206,7 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
         })()}
       </AnimatePresence>
 
-      <p className="text-[11px] text-muted/70 text-center pt-1">点击格子查看维度解读</p>
+      <p className="text-[11px] text-muted/70 text-center pt-1">{dict.dimension.clickHint}</p>
     </div>
   );
 }

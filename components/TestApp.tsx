@@ -3,17 +3,23 @@
 import { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Screen, Question, SpecialQuestion, TestResult } from '@/lib/types';
-import { buildSession, buildExtraQuestions, computeResult, EXTRA_ROUND_PROMPTS } from '@/lib/scoring';
+import { buildSession, buildExtraQuestions, computeResult } from '@/lib/scoring';
 import { selectRandom } from '@/lib/utils';
 import { addUnlocked } from '@/lib/codex';
+import { useI18n } from '@/lib/i18n/context';
+import { getLocaleData } from '@/lib/data/locale';
 import { IntroScreen } from './IntroScreen';
 import { TestScreen } from './TestScreen';
 import { ResultScreen } from './ResultScreen';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 type AppScreen = Screen | 'unlock';
 
 export function TestApp() {
+  const { locale, dict } = useI18n();
+  const data = getLocaleData(locale);
+
   const [screen, setScreen] = useState<AppScreen>('intro');
   const [allQuestions, setAllQuestions] = useState<(Question | SpecialQuestion)[]>([]);
   const [currentBatchQuestions, setCurrentBatchQuestions] = useState<(Question | SpecialQuestion)[]>([]);
@@ -24,7 +30,7 @@ export function TestApp() {
   const [newUnlock, setNewUnlock] = useState(false);
 
   const handleStart = useCallback(() => {
-    const questions = buildSession();
+    const questions = buildSession(data);
     setAllQuestions(questions);
     setCurrentBatchQuestions(questions);
     setAnswers({});
@@ -34,7 +40,7 @@ export function TestApp() {
     setExtraPrompt('');
     setScreen('test');
     window.scrollTo({ top: 0 });
-  }, []);
+  }, [data]);
 
   const handleBatchComplete = useCallback((batchAnswers: Record<string, number>, batchQuestions: (Question | SpecialQuestion)[]) => {
     const mergedAnswers = { ...answers, ...batchAnswers };
@@ -48,21 +54,21 @@ export function TestApp() {
     }
     setAllQuestions(mergedQuestions);
 
-    const extras = buildExtraQuestions(mergedAnswers, mergedQuestions);
+    const extras = buildExtraQuestions(mergedAnswers, mergedQuestions, data);
 
     if (extras.length > 0) {
       const nextRound = extraRound + 1;
       setExtraRound(nextRound);
       if (nextRound === 1) {
-        setExtraPrompt(EXTRA_ROUND_PROMPTS.first);
+        setExtraPrompt(dict.scoring.extraPromptFirst);
       } else {
-        setExtraPrompt(selectRandom(EXTRA_ROUND_PROMPTS.rest, 1)[0]);
+        setExtraPrompt(selectRandom([...dict.scoring.extraPromptRest], 1)[0]);
       }
       setCurrentBatchQuestions(extras);
       setScreen('test');
       window.scrollTo({ top: 0 });
     } else {
-      const r = computeResult(mergedAnswers, mergedQuestions);
+      const r = computeResult(mergedAnswers, mergedQuestions, data, dict);
       setResult(r);
 
       // Check if this is a new unlock
@@ -76,17 +82,17 @@ export function TestApp() {
       }
       window.scrollTo({ top: 0 });
     }
-  }, [answers, allQuestions, extraRound]);
+  }, [answers, allQuestions, extraRound, data, dict]);
 
   const handleQuickTest = useCallback(() => {
     // Build session, auto-fill random answers, compute result — full pipeline
-    const questions = buildSession();
+    const questions = buildSession(data);
     const autoAnswers: Record<string, number> = {};
     for (const q of questions) {
       const opts = q.options;
       autoAnswers[q.id] = opts[Math.floor(Math.random() * opts.length)].value;
     }
-    const r = computeResult(autoAnswers, questions);
+    const r = computeResult(autoAnswers, questions, data, dict);
     setResult(r);
     setAllQuestions(questions);
     setAnswers(autoAnswers);
@@ -95,7 +101,7 @@ export function TestApp() {
     setNewUnlock(isNew);
     setScreen(isNew ? 'unlock' : 'result');
     window.scrollTo({ top: 0 });
-  }, []);
+  }, [data, dict]);
 
   const handleRestart = useCallback(() => {
     setScreen('intro');
@@ -109,7 +115,8 @@ export function TestApp() {
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
@@ -183,7 +190,7 @@ export function TestApp() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <p className="text-xs text-accent font-medium mb-2">解锁新人格！</p>
+                <p className="text-xs text-accent font-medium mb-2">{dict.unlock.newPersonality}</p>
                 <h2 className="text-3xl sm:text-4xl font-display italic gradient-text py-1 px-2 leading-tight">
                   {result.finalType.code}
                 </h2>
@@ -202,7 +209,7 @@ export function TestApp() {
                 whileHover={{ scale: 1.04, boxShadow: '0 0 28px var(--glow)' }}
                 whileTap={{ scale: 0.97 }}
               >
-                查看详细结果
+                {dict.unlock.viewDetail}
               </motion.button>
             </motion.div>
           </motion.div>

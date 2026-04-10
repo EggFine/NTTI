@@ -4,7 +4,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { TestResult } from '@/lib/types';
 import { encodeShareUrl } from '@/lib/share';
+import { useI18n } from '@/lib/i18n/context';
 import { DimensionChart } from './DimensionChart';
+import { SimilarityRing } from './SimilarityRing';
 import { QRCode } from './QRCode';
 import { ResultPoster } from './ResultPoster';
 import type { PosterTheme } from './ResultPoster';
@@ -15,37 +17,6 @@ interface ResultScreenProps {
   hideShare?: boolean;
 }
 
-function SimilarityRing({ value }: { value: number }) {
-  const r = 44;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (value / 100) * circumference;
-
-  return (
-    <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--ring-track)" strokeWidth="4.5" />
-        <motion.circle
-          cx="50" cy="50" r={r}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="4.5"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl md:text-4xl font-bold font-mono text-accent-light leading-none">
-          {value}
-        </span>
-        <span className="text-[10px] text-muted mt-1">匹配度%</span>
-      </div>
-    </div>
-  );
-}
-
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -53,6 +24,7 @@ const fadeUp = (delay: number) => ({
 });
 
 export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps) {
+  const { locale, dict } = useI18n();
   const { finalType, modeKicker, badge, sub, special, secondaryType } = result;
   const [displaySimilarity, setDisplaySimilarity] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -65,14 +37,13 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
   const posterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setShareUrl(encodeShareUrl(result, window.location.origin));
+    setShareUrl(encodeShareUrl(result, window.location.origin, locale));
     setSiteUrl(window.location.origin);
-  }, [result]);
+  }, [result, locale]);
 
   const handleSavePoster = useCallback(async (theme: PosterTheme) => {
     setPosterTheme(theme);
     setSaving(true);
-    // Wait a tick for the poster to re-render with new theme
     await new Promise(r => setTimeout(r, 100));
     if (!posterRef.current) { setSaving(false); return; }
     try {
@@ -119,7 +90,7 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
 
       <div className="max-w-2xl mx-auto px-4 sm:px-5 py-10 sm:py-12 md:py-16">
 
-        {/* ════ HERO CARD ════ */}
+        {/* HERO CARD */}
         <motion.div className="glass rounded-2xl p-5 sm:p-6 md:p-8" {...fadeUp(0)}>
           <div className="flex flex-col items-center text-center gap-5">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/8 text-[11px] text-accent font-medium">
@@ -156,7 +127,7 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
           </div>
         </motion.div>
 
-        {/* ════ DESCRIPTION ════ */}
+        {/* DESCRIPTION */}
         <motion.div className="mt-4 glass rounded-2xl p-5 md:p-6" {...fadeUp(0.2)}>
           <p className="text-sm text-foreground/65 leading-relaxed">
             {descText}
@@ -166,35 +137,35 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
               onClick={() => setDescExpanded(!descExpanded)}
               className="mt-2.5 text-xs text-accent hover:text-accent-light transition-colors cursor-pointer font-medium"
             >
-              {descExpanded ? '收起 ↑' : '展开全文 ↓'}
+              {descExpanded ? dict.result.collapse : dict.result.expandFull}
             </button>
           )}
         </motion.div>
 
         {secondaryType && (
           <motion.div className="mt-3 glass rounded-xl p-4 flex items-center gap-3 flex-wrap" {...fadeUp(0.3)}>
-            <span className="text-xs text-muted">常规匹配（被酒精覆盖）：</span>
+            <span className="text-xs text-muted">{dict.result.normalMatchOverridden}</span>
             <span className="font-bold gradient-text text-sm">{secondaryType.code}</span>
             <span className="text-xs text-foreground/50">({secondaryType.cn})</span>
             <span className="text-[11px] text-muted font-mono ml-auto">{secondaryType.similarity}%</span>
           </motion.div>
         )}
 
-        {/* ════ 15 DIMENSIONS ════ */}
+        {/* 15 DIMENSIONS */}
         <motion.div className="mt-8" {...fadeUp(0.35)}>
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-divider" />
-            <h2 className="text-sm font-medium text-muted tracking-wide px-2">15 维度画像</h2>
+            <h2 className="text-sm font-medium text-muted tracking-wide px-2">{dict.result.dimensionTitle}</h2>
             <div className="h-px flex-1 bg-divider" />
           </div>
           <DimensionChart levels={result.levels} rawScores={result.rawScores} />
         </motion.div>
 
-        {/* ════ SHARE ════ */}
+        {/* SHARE */}
         {!hideShare && <motion.div className="mt-8" {...fadeUp(0.45)}>
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-divider" />
-            <h2 className="text-sm font-medium text-muted tracking-wide px-2">分享结果</h2>
+            <h2 className="text-sm font-medium text-muted tracking-wide px-2">{dict.result.shareTitle}</h2>
             <div className="h-px flex-1 bg-divider" />
           </div>
 
@@ -210,7 +181,7 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
-                {showShareQR ? '收起二维码' : '分享二维码'}
+                {showShareQR ? dict.result.hideQR : dict.result.shareQR}
               </motion.button>
 
               <motion.button
@@ -223,7 +194,7 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                保存海报
+                {dict.result.savePoster}
               </motion.button>
             </div>
 
@@ -241,24 +212,19 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
                     <QRCode value={shareUrl} size={160} />
                   </div>
                   <p className="text-[11px] text-muted text-center max-w-xs leading-relaxed">
-                    朋友扫码可查看你的人格结果，并被引导去测试
+                    {dict.result.qrHint}
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* poster modal is rendered at component root */}
           </div>
         </motion.div>}
 
-        {/* ════ FOOTER ════ */}
+        {/* FOOTER */}
         <motion.div className="mt-10 text-center space-y-5" {...fadeUp(0.55)}>
           <div className="space-y-1.5">
             <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
-              {special
-                ? '本测试仅供娱乐。隐藏人格和兜底结果属于彩蛋，请勿当成任何学术依据。'
-                : '本测试仅供娱乐，别拿它当诊断、面试或人生判决书。可以笑，别当真。'
-              }
+              {special ? dict.result.disclaimerSpecial : dict.result.disclaimerNormal}
             </p>
             <p className="text-xs text-muted/70">{sub}</p>
           </div>
@@ -270,12 +236,12 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
-            {hideShare ? '返回主页' : '再测一次'}
+            {hideShare ? dict.result.backHome : dict.result.restartTest}
           </motion.button>
         </motion.div>
       </div>
 
-      {/* ════ POSTER MODAL ════ */}
+      {/* POSTER MODAL */}
       <AnimatePresence>
         {showPosterPicker && (
           <motion.div
@@ -285,10 +251,8 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {/* backdrop */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !saving && setShowPosterPicker(false)} />
 
-            {/* modal content */}
             <motion.div
               className="relative glass rounded-2xl p-5 sm:p-6 max-w-sm w-full"
               initial={{ scale: 0.9, y: 20 }}
@@ -296,7 +260,6 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
               exit={{ scale: 0.9, y: 20 }}
               transition={{ type: 'spring', stiffness: 350, damping: 28 }}
             >
-              {/* close button */}
               <button
                 onClick={() => !saving && setShowPosterPicker(false)}
                 className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-option-hover text-muted hover:text-foreground/70 transition-colors cursor-pointer"
@@ -306,7 +269,7 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
                 </svg>
               </button>
 
-              <h3 className="text-sm font-medium text-foreground/80 mb-4 text-center">选择海报风格</h3>
+              <h3 className="text-sm font-medium text-foreground/80 mb-4 text-center">{dict.result.posterStyleTitle}</h3>
 
               <div className="grid grid-cols-2 gap-3">
                 {(['light', 'dark'] as const).map(theme => (
@@ -347,13 +310,13 @@ export function ResultScreen({ result, onRestart, hideShare }: ResultScreenProps
                       </div>
                     </div>
                     <div className="py-2 text-center text-xs text-foreground/70 bg-card-bg">
-                      {saving && posterTheme === theme ? '生成中...' : theme === 'light' ? '亮色' : '暗色'}
+                      {saving && posterTheme === theme ? dict.result.posterGenerating : theme === 'light' ? dict.result.posterLight : dict.result.posterDark}
                     </div>
                   </button>
                 ))}
               </div>
 
-              <p className="text-[10px] text-muted/70 text-center mt-3">点击预览卡片即可保存对应风格的海报</p>
+              <p className="text-[10px] text-muted/70 text-center mt-3">{dict.result.posterHint}</p>
             </motion.div>
           </motion.div>
         )}

@@ -2,7 +2,9 @@
 
 import { forwardRef } from 'react';
 import type { TestResult, DimensionId, DimensionLevel } from '@/lib/types';
-import { MODELS } from '@/lib/data/dimensions';
+import { useI18n } from '@/lib/i18n/context';
+import { t as tpl } from '@/lib/i18n';
+import { getLocaleData } from '@/lib/data/locale';
 import { QRCode } from './QRCode';
 
 export type PosterTheme = 'light' | 'dark';
@@ -14,12 +16,20 @@ interface ResultPosterProps {
   theme: PosterTheme;
 }
 
-const SHORT: Record<DimensionId, string> = {
+const SHORT_ZH: Record<DimensionId, string> = {
   S1: '自尊', S2: '清晰', S3: '价值',
   E1: '安全', E2: '投入', E3: '边界',
   A1: '世界', A2: '规则', A3: '意义',
   Ac1: '动机', Ac2: '决策', Ac3: '执行',
   So1: '社交', So2: '界限', So3: '真实',
+};
+
+const SHORT_EN: Record<DimensionId, string> = {
+  S1: 'Esteem', S2: 'Clarity', S3: 'Values',
+  E1: 'Secure', E2: 'Invest', E3: 'Bounds',
+  A1: 'World', A2: 'Rules', A3: 'Purpose',
+  Ac1: 'Drive', Ac2: 'Decide', Ac3: 'Execute',
+  So1: 'Social', So2: 'Limits', So3: 'Real',
 };
 
 const themes = {
@@ -55,6 +65,10 @@ const themes = {
 
 export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
   function ResultPoster({ result, shareUrl, siteUrl, theme }, ref) {
+    const { locale, dict } = useI18n();
+    const data = getLocaleData(locale);
+    const SHORT = locale === 'zh' ? SHORT_ZH : SHORT_EN;
+
     const { finalType, bestNormal, levels } = result;
     const t = themes[theme];
 
@@ -77,7 +91,7 @@ export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
       >
         {/* header */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: t.muted, marginBottom: 8 }}>NTTI 不太正经人格测试</div>
+          <div style={{ fontSize: 11, color: t.muted, marginBottom: 8 }}>{dict.poster.header}</div>
           <div style={{
             fontSize: 48,
             fontWeight: 700,
@@ -107,9 +121,9 @@ export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
           <span style={{ fontSize: 32, fontWeight: 700, fontFamily: 'monospace', color: t.accent }}>
             {bestNormal.similarity}
           </span>
-          <span style={{ fontSize: 12, color: t.muted }}>% 匹配度</span>
+          <span style={{ fontSize: 12, color: t.muted }}>{dict.poster.matchPercent}</span>
           <span style={{ fontSize: 11, color: t.muted, marginLeft: 8 }}>
-            命中 {bestNormal.exact}/15 维
+            {tpl(dict.poster.hitDimensions, { exact: bestNormal.exact })}
           </span>
         </div>
 
@@ -120,13 +134,13 @@ export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
           gap: 6,
           marginBottom: 20,
         }}>
-          {MODELS.map(m => (
+          {data.models.map(m => (
             <div key={m.id} style={{ textAlign: 'center', fontSize: 9, color: t.muted, paddingBottom: 2 }}>
-              {m.name.replace('模型', '')}
+              {locale === 'zh' ? m.name.replace('模型', '') : m.name.replace(' Model', '')}
             </div>
           ))}
           {[0, 1, 2].map(row =>
-            MODELS.map(model => {
+            data.models.map(model => {
               const dimId = model.dimensions[row];
               const level = levels[dimId];
               return (
@@ -183,10 +197,10 @@ export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
           </div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 500, color: t.color, marginBottom: 4 }}>
-              扫码查看完整结果
+              {dict.poster.scanFullResult}
             </div>
             <div style={{ fontSize: 10, color: t.muted, lineHeight: 1.5 }}>
-              或者也来测测你是什么人格？
+              {dict.poster.scanOrTest}
             </div>
             <div style={{ fontSize: 9, color: t.muted, marginTop: 6, opacity: 0.6 }}>
               {siteUrl.replace(/^https?:\/\//, '')}

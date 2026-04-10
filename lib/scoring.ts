@@ -1,8 +1,9 @@
-import type { DimensionId, DimensionLevel, Question, SpecialQuestion, RankedType, TestResult } from './types';
+import type { DimensionId, DimensionLevel, Question, SpecialQuestion, PersonalityType, RankedType, TestResult } from './types';
 import { DIMENSION_IDS } from './data/dimensions';
-import { QUESTION_BANK, SPECIAL_QUESTIONS } from './data/questions';
-import { PERSONALITY_TYPES, DRUNK_TYPE, FALLBACK_TYPE } from './data/personalities';
 import { shuffle, selectRandom } from './utils';
+import type { Dictionary } from './i18n';
+import { t as tpl } from './i18n';
+import type { LocaleData } from './data/locale';
 
 // ─── Constants ───
 
@@ -24,35 +25,20 @@ const LEVEL_NUM: Record<DimensionLevel, number> = { L: 1, M: 2, H: 3 };
 const LEVELS: DimensionLevel[] = ['L', 'M', 'H'];
 const DEFAULT_WEIGHT = 2;
 
-// ─── Consistency detection prompts ───
-
-export const EXTRA_ROUND_PROMPTS = {
-  first: '为了让你的结果更准确，这里准备了几道补充题',
-  rest: [
-    '马上就好了，再回答几道',
-    '快了快了，最后几个',
-    '坚持一下，精准度在提升中',
-    '差一点点就完美了',
-    '你的耐心会让结果更靠谱',
-    '就差临门一脚了',
-    '系统正在努力理解你，再帮帮它',
-  ],
-};
-
 // ─── Session building ───
 
 /** Build initial session: 3 questions per dimension + drink gate */
-export function buildSession(): (Question | SpecialQuestion)[] {
+export function buildSession(data: LocaleData): (Question | SpecialQuestion)[] {
   const selected: Question[] = [];
   for (const dim of DIMENSION_IDS) {
-    const pool = QUESTION_BANK[dim];
+    const pool = data.questionBank[dim];
     if (pool) {
       selected.push(...selectRandom(pool, QUESTIONS_PER_DIM));
     }
   }
   const shuffled = shuffle(selected);
 
-  const gate = SPECIAL_QUESTIONS.find(q => q.kind === 'drink_gate')!;
+  const gate = data.specialQuestions.find(q => q.kind === 'drink_gate')!;
   const insertAt = Math.floor(Math.random() * (shuffled.length - 8)) + 8;
   shuffled.splice(insertAt, 0, gate as unknown as Question);
 
@@ -63,6 +49,7 @@ export function buildSession(): (Question | SpecialQuestion)[] {
 export function buildExtraQuestions(
   answers: Record<string, number>,
   allSessionQuestions: (Question | SpecialQuestion)[],
+  data: LocaleData,
 ): Question[] {
   const extras: Question[] = [];
   const usedIds = new Set(allSessionQuestions.map(q => q.id));
@@ -83,7 +70,7 @@ export function buildExtraQuestions(
     const minS = Math.min(...dimScores);
     if (maxS - minS >= 2) {
       // Find an unused question from this dim's pool
-      const pool = QUESTION_BANK[dim] || [];
+      const pool = data.questionBank[dim] || [];
       const available = pool.filter(q => !usedIds.has(q.id));
       if (available.length > 0) {
         const picked = selectRandom(available, 1)[0];
@@ -140,6 +127,8 @@ function bestLevel(probs: [number, number, number]): DimensionLevel {
 export function computeResult(
   answers: Record<string, number>,
   sessionQuestions: (Question | SpecialQuestion)[],
+  data: LocaleData,
+  dict: Dictionary,
 ): TestResult {
   // 1. Raw scores per dimension
   const rawScores = {} as Record<DimensionId, number>;
@@ -165,7 +154,7 @@ export function computeResult(
   }
 
   // 4. Weighted probabilistic matching against all types
-  const ranked: RankedType[] = PERSONALITY_TYPES.map(type => {
+  const ranked: RankedType[] = data.personalityTypes.map(type => {
     const pattern = parsePattern(type.pattern);
     const weights = parseWeights(type.weights);
     let totalWeightedDist = 0;
@@ -196,25 +185,27 @@ export function computeResult(
   // 5. Special type checks
   const drunkTriggered = answers['drink_gate_q2'] === 2;
 
+  const s = dict.scoring;
+
   let finalType = bestNormal;
-  let modeKicker = '你的主类型';
-  let badge = `匹配度 ${bestNormal.similarity}% · 精准命中 ${bestNormal.exact}/15 维`;
-  let sub = '维度命中度较高，当前结果可视为你的第一人格画像。';
+  let modeKicker = s.modeKickerPrimary;
+  let badge = tpl(s.badgeNormal, { sim: bestNormal.similarity, exact: bestNormal.exact });
+  let sub = s.subNormal;
   let special = false;
   let secondaryType: RankedType | null = null;
 
   if (drunkTriggered) {
-    finalType = { ...DRUNK_TYPE, distance: 0, exact: 15, similarity: 100 };
+    finalType = { ...data.drunkType, distance: 0, exact: 15, similarity: 100 };
     secondaryType = bestNormal;
-    modeKicker = '隐藏人格已激活';
-    badge = '匹配度 100% · 酒精异常因子已接管';
-    sub = '乙醇亲和性过强，系统已直接跳过常规人格审判。';
+    modeKicker = s.modeKickerHidden;
+    badge = s.badgeDrunk;
+    sub = s.subDrunk;
     special = true;
   } else if (bestNormal.similarity < 50) {
-    finalType = { ...FALLBACK_TYPE, distance: bestNormal.distance, exact: bestNormal.exact, similarity: bestNormal.similarity };
-    modeKicker = '系统强制兜底';
-    badge = `标准人格库最高匹配仅 ${bestNormal.similarity}%`;
-    sub = '标准人格库对你的脑回路集体罢工了，于是系统把你强制分配给了 HHHH。';
+    finalType = { ...data.fallbackType, distance: bestNormal.distance, exact: bestNormal.exact, similarity: bestNormal.similarity };
+    modeKicker = s.modeKickerFallback;
+    badge = tpl(s.badgeFallback, { sim: bestNormal.similarity });
+    sub = s.subFallback;
     special = true;
   }
 
@@ -238,11 +229,12 @@ export function reconstructFromShare(
   levels: Record<DimensionId, DimensionLevel>,
   exact: number,
   isSpecial: boolean,
+  data: LocaleData,
 ) {
-  let matchedType = PERSONALITY_TYPES.find(t => t.code === typeCode);
+  let matchedType = data.personalityTypes.find(t => t.code === typeCode);
   if (!matchedType) {
-    if (typeCode === 'DRUNK') matchedType = DRUNK_TYPE;
-    else if (typeCode === 'HHHH') matchedType = FALLBACK_TYPE;
+    if (typeCode === 'DRUNK') matchedType = data.drunkType;
+    else if (typeCode === 'HHHH') matchedType = data.fallbackType;
     else return null;
   }
 

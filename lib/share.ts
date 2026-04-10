@@ -39,8 +39,8 @@ function fromBase64Url(str: string): string {
   return atob(s);
 }
 
-/** Encode a TestResult into a shareable URL path: /r?d=<payload>&s=<sig> */
-export function encodeShareUrl(result: TestResult, baseUrl: string): string {
+/** Encode a TestResult into a shareable URL path: /<locale>/r?d=<payload>&s=<sig> */
+export function encodeShareUrl(result: TestResult, baseUrl: string, locale: string = 'zh'): string {
   const levels = DIMENSION_IDS.map(d => result.levels[d]).join('');
   const payload: SharePayload = {
     t: result.finalType.code,
@@ -53,7 +53,7 @@ export function encodeShareUrl(result: TestResult, baseUrl: string): string {
   const data = toBase64Url(JSON.stringify(payload));
   const sig = sign(data);
 
-  const url = new URL('/r', baseUrl);
+  const url = new URL(`/${locale}/r`, baseUrl);
   url.searchParams.set('d', data);
   url.searchParams.set('s', sig);
   return url.toString();

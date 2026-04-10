@@ -4,39 +4,22 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import type { PersonalityType, TestResult } from '@/lib/types';
-import { PERSONALITY_TYPES, DRUNK_TYPE, FALLBACK_TYPE } from '@/lib/data/personalities';
 import { DIMENSION_IDS } from '@/lib/data/dimensions';
 import { getUnlocked, clearUnlocked } from '@/lib/codex';
 import { shuffle } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/context';
+import { t as tpl } from '@/lib/i18n';
+import { getLocaleData } from '@/lib/data/locale';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { ResultScreen } from './ResultScreen';
 
-const ALL_TYPES: PersonalityType[] = [...PERSONALITY_TYPES, DRUNK_TYPE, FALLBACK_TYPE];
-
-function buildFakeResult(type: PersonalityType): TestResult {
-  const pattern = (type.pattern || 'MMM-MMM-MMM-MMM-MMM').replace(/-/g, '').split('') as ('L' | 'M' | 'H')[];
-  const scoreMap = { L: 3, M: 6, H: 8 };
-  const rawScores = {} as Record<string, number>;
-  const levels = {} as Record<string, string>;
-  DIMENSION_IDS.forEach((dim, i) => {
-    const lvl = pattern[i] || 'M';
-    levels[dim] = lvl;
-    rawScores[dim] = scoreMap[lvl];
-  });
-  return {
-    rawScores: rawScores as TestResult['rawScores'],
-    levels: levels as TestResult['levels'],
-    finalType: type,
-    bestNormal: { ...type, distance: 0, exact: 15, similarity: 95 },
-    modeKicker: '图鉴查看',
-    badge: `图鉴模式 · ${type.code}`,
-    sub: '这是图鉴中的结果预览，不代表真实测试。',
-    special: false,
-    secondaryType: null,
-  };
-}
-
 export function CodexView() {
+  const { locale, dict } = useI18n();
+  const data = getLocaleData(locale);
+
+  const ALL_TYPES: PersonalityType[] = [...data.personalityTypes, data.drunkType, data.fallbackType];
+
   const [unlocked, setUnlocked] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const [viewing, setViewing] = useState<TestResult | null>(null);
@@ -49,16 +32,41 @@ export function CodexView() {
 
   const isDebugMode = mounted && window.location.search.includes('debug');
 
+  function buildFakeResult(type: PersonalityType): TestResult {
+    const pattern = (type.pattern || 'MMM-MMM-MMM-MMM-MMM').replace(/-/g, '').split('') as ('L' | 'M' | 'H')[];
+    const scoreMap = { L: 3, M: 6, H: 8 };
+    const rawScores = {} as Record<string, number>;
+    const levels = {} as Record<string, string>;
+    DIMENSION_IDS.forEach((dim, i) => {
+      const lvl = pattern[i] || 'M';
+      levels[dim] = lvl;
+      rawScores[dim] = scoreMap[lvl];
+    });
+    return {
+      rawScores: rawScores as TestResult['rawScores'],
+      levels: levels as TestResult['levels'],
+      finalType: type,
+      bestNormal: { ...type, distance: 0, exact: 15, similarity: 95 },
+      modeKicker: dict.scoring.modeKickerCodex,
+      badge: tpl(dict.scoring.badgeCodex, { code: type.code }),
+      sub: dict.scoring.subCodex,
+      special: false,
+      secondaryType: null,
+    };
+  }
+
   const handleView = useCallback((type: PersonalityType) => {
     setViewing(buildFakeResult(type));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dict]);
 
   const handleRandom = useCallback(() => {
     const unlockedTypes = ALL_TYPES.filter(t => unlocked.includes(t.code));
     if (unlockedTypes.length === 0) return;
     const pick = shuffle(unlockedTypes)[0];
     setViewing(buildFakeResult(pick));
-  }, [unlocked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlocked, dict]);
 
   const handleClear = useCallback(() => {
     clearUnlocked();
@@ -70,7 +78,8 @@ export function CodexView() {
   if (viewing) {
     return (
       <>
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
         <ResultScreen
@@ -87,7 +96,8 @@ export function CodexView() {
 
   return (
     <div className="min-h-screen relative z-10">
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
@@ -99,14 +109,14 @@ export function CodexView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 28 }}
         >
-          <Link href="/" className="text-xs text-muted hover:text-foreground/70 transition-colors">
-            ← 返回首页
+          <Link href={`/${locale}`} className="text-xs text-muted hover:text-foreground/70 transition-colors">
+            {dict.codex.backHome}
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground/90 mt-4">
-            人格图鉴
+            {dict.codex.title}
           </h1>
           <p className="text-sm text-muted mt-2">
-            已解锁 <span className="text-accent font-mono font-bold">{unlockedCount}</span> / {totalCount} 种人格
+            {dict.codex.unlocked} <span className="text-accent font-mono font-bold">{unlockedCount}</span> / {totalCount} {dict.codex.total}
           </p>
 
           {/* progress bar */}
@@ -135,7 +145,7 @@ export function CodexView() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
-            随机查看
+            {dict.codex.randomView}
           </button>
 
           <button
@@ -146,7 +156,7 @@ export function CodexView() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            清除数据
+            {dict.codex.clearData}
           </button>
         </motion.div>
 
@@ -183,7 +193,7 @@ export function CodexView() {
                 ) : (
                   <>
                     <div className="text-2xl sm:text-3xl font-bold text-muted/30">?</div>
-                    <div className="text-[10px] text-muted/30 mt-1">未解锁</div>
+                    <div className="text-[10px] text-muted/30 mt-1">{dict.codex.locked}</div>
                   </>
                 )}
               </motion.button>
@@ -193,7 +203,7 @@ export function CodexView() {
 
         {/* hint */}
         <p className="text-xs text-muted/70 text-center mt-6">
-          完成测试即可解锁对应人格 · 点击已解锁的卡片查看详情
+          {dict.codex.hint}
         </p>
       </div>
 
@@ -219,20 +229,20 @@ export function CodexView() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <p className="text-sm text-foreground/80">确定要清除所有图鉴数据吗？</p>
-              <p className="text-xs text-muted">此操作不可撤销，已解锁的 {unlockedCount} 个人格将全部重置</p>
+              <p className="text-sm text-foreground/80">{dict.codex.confirmTitle}</p>
+              <p className="text-xs text-muted">{tpl(dict.codex.confirmDesc, { n: unlockedCount })}</p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => setShowConfirmClear(false)}
                   className="px-5 py-2 rounded-full glass text-sm text-foreground/70 cursor-pointer hover:text-foreground/90 transition-colors"
                 >
-                  取消
+                  {dict.codex.cancel}
                 </button>
                 <button
                   onClick={handleClear}
                   className="px-5 py-2 rounded-full bg-red-500 text-white text-sm font-medium cursor-pointer hover:bg-red-600 transition-colors"
                 >
-                  确认清除
+                  {dict.codex.confirmClear}
                 </button>
               </div>
             </motion.div>

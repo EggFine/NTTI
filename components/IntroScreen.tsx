@@ -1,9 +1,11 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { QRCode } from "./QRCode";
+import { ParticleField } from "./ParticleField";
+import { useI18n } from "@/lib/i18n/context";
 
 const emptySubscribe = () => () => {};
 function useSiteUrl() {
@@ -14,24 +16,12 @@ function useSiteUrl() {
   );
 }
 
-const MODELS = [
-  {
-    label: "自我",
-    icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z",
-  },
-  {
-    label: "情感",
-    icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
-  },
-  {
-    label: "态度",
-    icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-  },
-  { label: "行动", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-  {
-    label: "社交",
-    icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-  },
+const MODEL_ICONS = [
+  "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z",
+  "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+  "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  "M13 10V3L4 14h7v7l9-11h-7z",
+  "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
 ];
 
 const SAMPLE_TYPES = [
@@ -48,71 +38,6 @@ const SAMPLE_TYPES = [
 interface IntroScreenProps {
   onStart: () => void;
   onQuickTest?: () => void;
-}
-
-function ParticleField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let animId: number;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    function resize() {
-      canvas!.width = window.innerWidth * dpr;
-      canvas!.height = window.innerHeight * dpr;
-      ctx!.scale(dpr, dpr);
-    }
-    resize();
-
-    const particles = Array.from({ length: 35 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.2 + 0.4,
-      dx: (Math.random() - 0.5) * 0.25,
-      dy: (Math.random() - 0.5) * 0.15,
-      opacity: Math.random() * 0.2 + 0.04,
-    }));
-
-    function draw() {
-      ctx!.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      const isDark = document.documentElement.classList.contains("dark");
-      for (const p of particles) {
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.x < 0) p.x = window.innerWidth;
-        if (p.x > window.innerWidth) p.x = 0;
-        if (p.y < 0) p.y = window.innerHeight;
-        if (p.y > window.innerHeight) p.y = 0;
-        ctx!.beginPath();
-        ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx!.fillStyle = isDark
-          ? `rgba(20,184,166,${p.opacity})`
-          : `rgba(13,148,136,${p.opacity})`;
-        ctx!.fill();
-      }
-      animId = requestAnimationFrame(draw);
-    }
-    draw();
-
-    window.addEventListener("resize", resize);
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 pointer-events-none"
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
 }
 
 const stagger = {
@@ -139,6 +64,7 @@ function useIsDebug() {
 
 function DebugQuickTestButton({ onQuickTest }: { onQuickTest?: () => void }) {
   const isDebug = useIsDebug();
+  const { dict } = useI18n();
   if (!isDebug || !onQuickTest) return null;
 
   return (
@@ -147,13 +73,14 @@ function DebugQuickTestButton({ onQuickTest }: { onQuickTest?: () => void }) {
         onClick={onQuickTest}
         className="px-4 py-2 rounded-full glass text-xs text-muted cursor-pointer hover:text-foreground/70 transition-colors"
       >
-        [DEBUG] 随机数据快速测试
+        {dict.intro.debugQuickTest}
       </button>
     </motion.div>
   );
 }
 
 export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
+  const { locale, dict } = useI18n();
   const siteUrl = useSiteUrl();
 
   return (
@@ -219,14 +146,14 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
           variants={fadeUp}
           className="text-base md:text-lg font-medium text-foreground/70 mt-2"
         >
-          不太正经人格测试
+          {dict.intro.subtitle}
         </motion.p>
 
         <motion.p
           variants={fadeUp}
           className="text-sm text-accent mt-2.5 font-medium"
         >
-          SBTI 已经过时，NTTI 来了。
+          {dict.intro.tagline}
         </motion.p>
 
         {/* 5-model icons in a glass card */}
@@ -235,9 +162,9 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
           className="glass rounded-2xl px-4 sm:px-6 py-4 mt-8 w-full"
         >
           <div className="flex items-center justify-around sm:justify-between">
-            {MODELS.map((m) => (
+            {dict.intro.models.map((label, i) => (
               <motion.div
-                key={m.label}
+                key={label}
                 className="flex flex-col items-center gap-1 sm:gap-1.5 group"
                 whileHover={{ y: -2 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -253,12 +180,12 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d={m.icon}
+                      d={MODEL_ICONS[i]}
                     />
                   </svg>
                 </div>
                 <span className="text-[9px] sm:text-[10px] text-muted/80 group-hover:text-foreground/60 transition-colors duration-200">
-                  {m.label}
+                  {label}
                 </span>
               </motion.div>
             ))}
@@ -270,7 +197,7 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
           variants={fadeUp}
           className="text-sm text-muted leading-relaxed mt-6 px-2"
         >
-          基于五大模型、15个维度交叉匹配，每次从题库中随机抽取45道题，找到属于你的那个不太正经的人格标签。
+          {dict.intro.description}
         </motion.p>
 
         {/* stats */}
@@ -278,12 +205,7 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
           variants={fadeUp}
           className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-6 w-full"
         >
-          {[
-            { n: "15", l: "测试维度" },
-            { n: "40+", l: "人格类型" },
-            { n: "100+", l: "随机题库" },
-            { n: "~8", l: "分钟完成" },
-          ].map((s) => (
+          {dict.intro.stats.map((s) => (
             <div key={s.l} className="text-center py-2.5 glass rounded-xl">
               <div className="text-base sm:text-lg font-bold font-mono text-foreground/80">
                 {s.n}
@@ -302,9 +224,9 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
           >
-            开始测试
+            {dict.intro.startTest}
           </motion.button>
-          <Link href="/codex">
+          <Link href={`/${locale}/codex`}>
             <motion.span
               className="inline-flex items-center gap-1.5 px-4 py-3.5 sm:py-4 rounded-full glass text-sm text-muted cursor-pointer hover:text-foreground/70 transition-colors"
               whileHover={{ scale: 1.04 }}
@@ -314,7 +236,7 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              图鉴
+              {dict.intro.codex}
             </motion.span>
           </Link>
         </motion.div>
@@ -331,7 +253,7 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
             <div className="glass rounded-2xl p-3">
               <QRCode value={siteUrl} size={120} />
             </div>
-            <p className="text-[11px] text-muted">分享给朋友</p>
+            <p className="text-[11px] text-muted">{dict.intro.shareToFriends}</p>
           </motion.div>
         )}
 
@@ -340,9 +262,9 @@ export function IntroScreen({ onStart, onQuickTest }: IntroScreenProps) {
           variants={fadeUp}
           className="mt-6 pt-5 border-t border-divider w-full space-y-1.5 text-center"
         >
-          <p className="text-xs text-muted">仅供娱乐 · 不具备任何科学依据</p>
+          <p className="text-xs text-muted">{dict.intro.footer}</p>
           <p className="text-[11px] text-muted/80 leading-relaxed">
-            SBTI 原作者 B站@Q肉儿串儿，NTTI 基于 SBTI 体系改进优化
+            {dict.intro.credit}
           </p>
           <div className="flex items-center justify-center gap-3 text-[11px] text-muted/60">
             <a
