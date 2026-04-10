@@ -10,7 +10,6 @@ import { QuestionCard } from './QuestionCard';
 interface TestScreenProps {
   questions: (Question | SpecialQuestion)[];
   onComplete: (answers: Record<string, number>, finalQuestions: (Question | SpecialQuestion)[]) => void;
-  /** If set, shows a banner message (for extra rounds) */
   extraPrompt?: string;
 }
 
@@ -18,22 +17,14 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
   const [questions, setQuestions] = useState(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showPrompt, setShowPrompt] = useState(!!extraPrompt);
+  const [showPromptCard, setShowPromptCard] = useState(!!extraPrompt);
 
-  // Reset state when questions change (new batch)
   useEffect(() => {
     setQuestions(initialQuestions);
     setCurrentIndex(0);
     setAnswers({});
-    setShowPrompt(!!extraPrompt);
+    setShowPromptCard(!!extraPrompt);
   }, [initialQuestions, extraPrompt]);
-
-  // Auto-dismiss prompt after 3 seconds
-  useEffect(() => {
-    if (!showPrompt) return;
-    const t = setTimeout(() => setShowPrompt(false), 3500);
-    return () => clearTimeout(t);
-  }, [showPrompt]);
 
   const currentQuestion = questions[currentIndex];
   const totalAnswered = Object.keys(answers).filter(k =>
@@ -50,7 +41,6 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
     const newAnswers = { ...answers, [currentQuestion.id]: value };
     setAnswers(newAnswers);
 
-    // drink gate logic
     if (currentQuestion.id === 'drink_gate_q1' && value === 3) {
       const trigger = SPECIAL_QUESTIONS.find(q => q.kind === 'drink_trigger');
       if (trigger && !questions.some(q => q.id === trigger.id)) {
@@ -70,7 +60,6 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
       }
     }
 
-    // auto-advance
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         goTo(currentIndex + 1);
@@ -80,29 +69,49 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
     }, 400);
   }, [currentQuestion, currentIndex, questions, answers, onComplete, goTo]);
 
-  // keyboard shortcuts moved to QuestionCard (knows shuffled order)
-
   if (!currentQuestion) return null;
+
+  // Extra round interstitial card
+  if (showPromptCard && extraPrompt) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 relative z-10">
+        <motion.div
+          className="w-full max-w-md glass rounded-2xl p-6 sm:p-8 text-center space-y-6"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+        >
+          {/* icon */}
+          <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
+            <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+
+          <p className="text-base sm:text-lg font-medium text-foreground/85 leading-relaxed">
+            {extraPrompt}
+          </p>
+
+          <p className="text-xs text-muted">
+            还有 {questions.length} 道补充题
+          </p>
+
+          <motion.button
+            onClick={() => setShowPromptCard(false)}
+            className="px-10 py-3.5 rounded-full bg-accent text-white font-medium text-sm cursor-pointer"
+            whileHover={{ scale: 1.04, boxShadow: '0 0 28px var(--glow)' }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          >
+            开始吧
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative z-10">
-      {/* extra round prompt banner */}
-      <AnimatePresence>
-        {showPrompt && extraPrompt && (
-          <motion.div
-            className="fixed top-0 left-0 right-0 z-30 flex justify-center pt-14 sm:pt-16 px-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          >
-            <div className="glass rounded-xl px-5 py-3 max-w-md text-center shadow-lg">
-              <p className="text-sm text-foreground/80">{extraPrompt}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* top progress */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-divider px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-2xl mx-auto">
