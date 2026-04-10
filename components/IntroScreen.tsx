@@ -1,8 +1,17 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { QRCode } from "./QRCode";
+
+const emptySubscribe = () => () => {};
+function useSiteUrl() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => window.location.origin,
+    () => '',
+  );
+}
 
 const MODELS = [
   {
@@ -119,10 +128,7 @@ const fadeUp = {
 };
 
 export function IntroScreen({ onStart }: IntroScreenProps) {
-  const [siteUrl, setSiteUrl] = useState("");
-  useEffect(() => {
-    setSiteUrl(window.location.origin);
-  }, []);
+  const siteUrl = useSiteUrl();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-12 sm:py-16 relative z-10 overflow-hidden">

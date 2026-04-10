@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Question, SpecialQuestion } from '@/lib/types';
 import { SPECIAL_QUESTIONS } from '@/lib/data/questions';
@@ -19,12 +19,8 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showPromptCard, setShowPromptCard] = useState(!!extraPrompt);
 
-  useEffect(() => {
-    setQuestions(initialQuestions);
-    setCurrentIndex(0);
-    setAnswers({});
-    setShowPromptCard(!!extraPrompt);
-  }, [initialQuestions, extraPrompt]);
+  // No reset effect needed — parent uses key={`test-${extraRound}`}
+  // which fully remounts this component on each extra round.
 
   const currentQuestion = questions[currentIndex];
   const totalAnswered = Object.keys(answers).filter(k =>
