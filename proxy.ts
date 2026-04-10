@@ -19,9 +19,6 @@ function getLocaleFromHeaders(request: NextRequest): string {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip static files, _next, api, favicon
-  if (/^\/(_next|api|favicon\.ico)/.test(pathname) || /\.\w+$/.test(pathname)) return;
-
   // Already has locale prefix — no redirect needed
   const hasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
@@ -39,3 +36,7 @@ export function proxy(request: NextRequest) {
   url.pathname = `/${locale}${pathname}`;
   return NextResponse.redirect(url);
 }
+
+export const config = {
+  matcher: ['/((?!_next|api|favicon\\.ico|.*\\..*).*)'],
+};
