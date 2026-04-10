@@ -133,7 +133,7 @@ export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
         );
       })()}
 
-      <p className="text-[10px] text-muted/40 text-center">
+      <p className="text-[11px] text-muted/70 text-center">
         点击维度格子查看解读
       </p>
     </div>

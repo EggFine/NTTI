@@ -140,13 +140,13 @@ export function ResultScreen({ result, onRestart }: ResultScreenProps) {
 
         {/* ════════ FOOTER ════════ */}
         <div className="mt-10 text-center space-y-4 animate-slide-up" style={{ animationDelay: '350ms' }}>
-          <p className="text-[11px] text-muted/40 leading-relaxed max-w-sm mx-auto">
+          <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
             {special
               ? '本测试仅供娱乐。隐藏人格和兜底结果属于彩蛋，请勿当成任何学术依据。'
               : '本测试仅供娱乐，别拿它当诊断、面试或人生判决书。可以笑，别当真。'
             }
           </p>
-          <p className="text-xs text-muted/30">{sub}</p>
+          <p className="text-xs text-muted/70">{sub}</p>
 
           <button
             onClick={onRestart}

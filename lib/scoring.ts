@@ -102,7 +102,7 @@ export function computeResult(
     badge = '匹配度 100% · 酒精异常因子已接管';
     sub = '乙醇亲和性过强，系统已直接跳过常规人格审判。';
     special = true;
-  } else if (bestNormal.similarity < 60) {
+  } else if (bestNormal.similarity < 50) {
     finalType = { ...FALLBACK_TYPE, distance: bestNormal.distance, exact: bestNormal.exact, similarity: bestNormal.similarity };
     modeKicker = '系统强制兜底';
     badge = `标准人格库最高匹配仅 ${bestNormal.similarity}%`;

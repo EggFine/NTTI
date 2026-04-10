@@ -115,14 +115,14 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
         </button>
 
         {/* ── Bottom ── */}
-        <div className="mt-8 pt-6 border-t border-divider w-full max-w-sm space-y-2.5 text-center">
-          <p className="text-[11px] text-muted/40">
+        <div className="mt-8 pt-6 border-t border-divider w-full max-w-sm space-y-2 text-center">
+          <p className="text-xs text-muted">
             仅供娱乐 · 不具备任何科学依据
           </p>
-          <p className="text-[10px] text-muted/30 leading-relaxed">
+          <p className="text-[11px] text-muted/80 leading-relaxed">
             SBTI 原作者 B站@Q肉儿串儿，NTTI 基于 SBTI 体系、题库和人格改进优化而成
           </p>
-          <p className="text-[10px] text-muted/25 flex items-center justify-center gap-1">
+          <p className="text-[11px] text-muted/60 flex items-center justify-center gap-1">
             Powered by
             <svg className="w-3 h-3 inline-block" viewBox="0 0 32 32" fill="currentColor">
               <path d="M17.87 13.47l-12.65 5.6a1.16 1.16 0 01-.47.1 1.08 1.08 0 01-.72-.27 1.15 1.15 0 01-.36-1.1l2.17-9.43a3.24 3.24 0 012.88-2.5l12.33-1.03a.53.53 0 01.42.15.56.56 0 01.14.43l-.52 5.15a3.24 3.24 0 01-3.22 2.9z" />
