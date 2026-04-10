@@ -1,3 +1,5 @@
+[English](./README.en.md) | 中文
+
 # NTTI - 不太正经人格测试
 
 **在线体验：[ntti.eggfine.com](https://ntti.eggfine.com/)**
@@ -126,7 +128,7 @@ components/
   ThemeToggle.tsx         # 明暗切换
   LanguageSwitcher.tsx    # 语言切换
 
-proxy.ts                  # 语言检测 + URL 重定向
+middleware.ts             # 语言检测 + URL 重定向
 ```
 
 ## 致谢
