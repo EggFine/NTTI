@@ -16,7 +16,7 @@ function getLocaleFromHeaders(request: NextRequest): string {
   return defaultLocale;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Already has locale prefix — no redirect needed
