@@ -1,7 +1,8 @@
 import type { Question, SpecialQuestion } from '../types';
 
-// 每维度 6-8 题，运行时随机选 2 题
+// 每维度 6-8 题，运行时随机选 3 题
 // options.value: 1=低端, 2=中间, 3=高端
+// 选项顺序在前端渲染时自动随机打乱
 
 export const QUESTION_BANK: Record<string, Question[]> = {
   // ═══════════ S1 自尊自信 ═══════════

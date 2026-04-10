@@ -1,7 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'motion/react';
-import type { Question, SpecialQuestion } from '@/lib/types';
+import type { Question, SpecialQuestion, QuestionOption } from '@/lib/types';
+import { shuffle } from '@/lib/utils';
 
 interface QuestionCardProps {
   question: Question | SpecialQuestion;
@@ -14,6 +16,13 @@ interface QuestionCardProps {
 const OPTION_CODES = ['A', 'B', 'C', 'D'];
 
 export function QuestionCard({ question, index, total, selected, onSelect }: QuestionCardProps) {
+  // Shuffle option display order once per question (stable via useMemo keyed on id)
+  const shuffledOptions = useMemo<QuestionOption[]>(
+    () => shuffle(question.options),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [question.id],
+  );
+
   return (
     <motion.div
       className="w-full max-w-2xl mx-auto glass rounded-2xl p-4 sm:p-6 md:p-8"
@@ -27,9 +36,6 @@ export function QuestionCard({ question, index, total, selected, onSelect }: Que
         <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-accent/10 text-accent text-xs font-medium font-mono">
           {index + 1} / {total}
         </span>
-        {'dim' in question && (
-          <span className="text-[11px] text-muted/70 font-mono">{question.dim}</span>
-        )}
       </div>
 
       {/* question text */}
@@ -37,9 +43,9 @@ export function QuestionCard({ question, index, total, selected, onSelect }: Que
         {question.text}
       </h2>
 
-      {/* options */}
+      {/* options (shuffled) */}
       <div className="flex flex-col gap-2.5">
-        {question.options.map((opt, i) => {
+        {shuffledOptions.map((opt, i) => {
           const isSelected = selected === opt.value;
           return (
             <motion.button

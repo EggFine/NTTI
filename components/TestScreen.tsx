@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { Question, SpecialQuestion } from '@/lib/types';
 import { SPECIAL_QUESTIONS } from '@/lib/data/questions';
 import { ProgressBar } from './ProgressBar';
@@ -10,12 +10,30 @@ import { QuestionCard } from './QuestionCard';
 interface TestScreenProps {
   questions: (Question | SpecialQuestion)[];
   onComplete: (answers: Record<string, number>, finalQuestions: (Question | SpecialQuestion)[]) => void;
+  /** If set, shows a banner message (for extra rounds) */
+  extraPrompt?: string;
 }
 
-export function TestScreen({ questions: initialQuestions, onComplete }: TestScreenProps) {
+export function TestScreen({ questions: initialQuestions, onComplete, extraPrompt }: TestScreenProps) {
   const [questions, setQuestions] = useState(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [showPrompt, setShowPrompt] = useState(!!extraPrompt);
+
+  // Reset state when questions change (new batch)
+  useEffect(() => {
+    setQuestions(initialQuestions);
+    setCurrentIndex(0);
+    setAnswers({});
+    setShowPrompt(!!extraPrompt);
+  }, [initialQuestions, extraPrompt]);
+
+  // Auto-dismiss prompt after 3 seconds
+  useEffect(() => {
+    if (!showPrompt) return;
+    const t = setTimeout(() => setShowPrompt(false), 3500);
+    return () => clearTimeout(t);
+  }, [showPrompt]);
 
   const currentQuestion = questions[currentIndex];
   const totalAnswered = Object.keys(answers).filter(k =>
@@ -81,6 +99,23 @@ export function TestScreen({ questions: initialQuestions, onComplete }: TestScre
 
   return (
     <div className="min-h-screen flex flex-col relative z-10">
+      {/* extra round prompt banner */}
+      <AnimatePresence>
+        {showPrompt && extraPrompt && (
+          <motion.div
+            className="fixed top-0 left-0 right-0 z-30 flex justify-center pt-14 sm:pt-16 px-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          >
+            <div className="glass rounded-xl px-5 py-3 max-w-md text-center shadow-lg">
+              <p className="text-sm text-foreground/80">{extraPrompt}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* top progress */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-divider px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-2xl mx-auto">

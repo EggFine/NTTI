@@ -39,6 +39,8 @@ export interface PersonalityType {
   intro: string;
   desc: string;
   pattern: string; // e.g. "HHH-HMH-MHH-HHH-MHM"
+  /** 15-char weight string, each char 1-3, default all '2'. Higher = this dim matters more for this type. */
+  weights?: string;
 }
 
 export interface TestResult {
