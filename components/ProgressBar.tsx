@@ -1,5 +1,7 @@
 'use client';
 
+import { motion } from 'motion/react';
+
 interface ProgressBarProps {
   current: number;
   total: number;
@@ -15,9 +17,11 @@ export function ProgressBar({ current, total }: ProgressBarProps) {
         <span className="text-xs text-muted font-mono">{Math.round(percent)}%</span>
       </div>
       <div className="w-full h-1.5 bg-bar-track rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-accent-dim via-accent to-accent-light transition-all duration-500 ease-out"
-          style={{ width: `${percent}%` }}
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-accent-dim via-accent to-accent-light"
+          initial={{ width: 0 }}
+          animate={{ width: `${percent}%` }}
+          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
         />
       </div>
     </div>

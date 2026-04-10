@@ -1,5 +1,8 @@
 'use client';
 
+import { motion } from 'motion/react';
+import { useEffect, useRef } from 'react';
+
 const MODELS = [
   { label: '自我', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z' },
   { label: '情感', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
@@ -14,124 +17,205 @@ interface IntroScreenProps {
   onStart: () => void;
 }
 
+function ParticleField() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      canvas!.width = window.innerWidth * dpr;
+      canvas!.height = window.innerHeight * dpr;
+      ctx!.scale(dpr, dpr);
+    }
+    resize();
+
+    const particles = Array.from({ length: 35 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.2 + 0.4,
+      dx: (Math.random() - 0.5) * 0.25,
+      dy: (Math.random() - 0.5) * 0.15,
+      opacity: Math.random() * 0.2 + 0.04,
+    }));
+
+    function draw() {
+      ctx!.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      const isDark = document.documentElement.classList.contains('dark');
+      for (const p of particles) {
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0) p.x = window.innerWidth;
+        if (p.x > window.innerWidth) p.x = 0;
+        if (p.y < 0) p.y = window.innerHeight;
+        if (p.y > window.innerHeight) p.y = 0;
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx!.fillStyle = isDark
+          ? `rgba(20,184,166,${p.opacity})`
+          : `rgba(13,148,136,${p.opacity})`;
+        ctx!.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    window.addEventListener('resize', resize);
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none"
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
+}
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 30 } },
+};
+
 export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative z-10 overflow-hidden">
-      {/* ── background decorations ── */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-accent/[0.04] blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-warm/[0.03] blur-[80px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-16 relative z-10 overflow-hidden">
+      <ParticleField />
 
-      {/* floating scattered type codes as subtle background texture */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full bg-accent/[0.04] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[260px] h-[260px] rounded-full bg-warm/[0.03] blur-[80px] pointer-events-none" />
+
+      {/* floating type codes */}
       <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
         {SAMPLE_TYPES.map((code, i) => {
           const positions = [
-            'top-[12%] left-[8%] -rotate-12',
-            'top-[18%] right-[10%] rotate-6',
-            'top-[45%] left-[4%] rotate-3',
-            'top-[40%] right-[5%] -rotate-6',
-            'bottom-[30%] left-[12%] rotate-12',
-            'bottom-[25%] right-[8%] -rotate-3',
-            'bottom-[12%] left-[6%] -rotate-6',
-            'bottom-[8%] right-[15%] rotate-9',
+            'top-[14%] left-[8%]', 'top-[20%] right-[10%]',
+            'top-[48%] left-[5%]', 'top-[42%] right-[6%]',
+            'bottom-[28%] left-[10%]', 'bottom-[24%] right-[9%]',
+            'bottom-[10%] left-[7%]', 'bottom-[6%] right-[14%]',
           ];
+          const rotations = [-12, 6, 3, -6, 12, -3, -6, 9];
           return (
-            <span
+            <motion.span
               key={code}
-              className={`absolute font-display italic text-foreground/[0.03] text-2xl md:text-3xl ${positions[i]}`}
+              className={`absolute font-display italic text-foreground/[0.035] text-xl md:text-2xl ${positions[i]}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, rotate: rotations[i] }}
+              transition={{ delay: 1 + i * 0.1, duration: 1.5 }}
+              style={{ animationName: 'float', animationDuration: `${5 + i * 0.8}s`, animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite', animationDelay: `${i * 0.6}s` }}
             >
               {code}
-            </span>
+            </motion.span>
           );
         })}
       </div>
 
-      <div className="flex flex-col items-center max-w-lg text-center animate-fade-in relative">
-        {/* ── Title block ── */}
-        <h1 className="text-7xl md:text-9xl font-display italic tracking-tight gradient-text py-3 px-6 select-none">
+      <motion.div
+        className="flex flex-col items-center max-w-md w-full text-center relative"
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+      >
+        {/* title */}
+        <motion.h1
+          className="text-7xl md:text-[8.5rem] font-display italic tracking-tight gradient-text py-3 px-6 select-none leading-none"
+          variants={fadeUp}
+        >
           NTTI
-        </h1>
-        <p className="text-lg md:text-xl font-medium text-foreground/75 mt-1">
-          不太正经人格测试
-        </p>
-        <p className="text-sm text-accent mt-3 font-medium">
-          SBTI 已经过时，NTTI 来了。
-        </p>
+        </motion.h1>
 
-        {/* ── 5-model icons row ── */}
-        <div className="flex items-center justify-center gap-5 md:gap-7 mt-8">
-          {MODELS.map((m) => (
-            <div key={m.label} className="flex flex-col items-center gap-1.5 group">
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-subtle flex items-center justify-center transition-colors group-hover:bg-accent/10">
-                <svg className="w-4.5 h-4.5 md:w-5 md:h-5 text-muted group-hover:text-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
-                </svg>
-              </div>
-              <span className="text-[10px] md:text-xs text-muted/70 group-hover:text-foreground/60 transition-colors">{m.label}</span>
+        <motion.p variants={fadeUp} className="text-base md:text-lg font-medium text-foreground/70 mt-2">
+          不太正经人格测试
+        </motion.p>
+
+        <motion.p variants={fadeUp} className="text-sm text-accent mt-2.5 font-medium">
+          SBTI 已经过时，NTTI 来了。
+        </motion.p>
+
+        {/* 5-model icons in a glass card */}
+        <motion.div variants={fadeUp} className="glass rounded-2xl px-6 py-4 mt-8 w-full">
+          <div className="flex items-center justify-between">
+            {MODELS.map((m) => (
+              <motion.div
+                key={m.label}
+                className="flex flex-col items-center gap-1.5 group"
+                whileHover={{ y: -2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-subtle flex items-center justify-center transition-colors duration-200 group-hover:bg-accent/10">
+                  <svg className="w-[18px] h-[18px] text-muted group-hover:text-accent transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
+                  </svg>
+                </div>
+                <span className="text-[10px] text-muted/80 group-hover:text-foreground/60 transition-colors duration-200">{m.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* description */}
+        <motion.p variants={fadeUp} className="text-sm text-muted leading-relaxed mt-6 px-2">
+          基于五大模型、15个维度交叉匹配，每次从题库中随机抽取30道题，找到属于你的那个不太正经的人格标签。
+        </motion.p>
+
+        {/* stats */}
+        <motion.div variants={fadeUp} className="grid grid-cols-4 gap-3 mt-6 w-full">
+          {[
+            { n: '15', l: '测试维度' },
+            { n: '40+', l: '人格类型' },
+            { n: '100+', l: '随机题库' },
+            { n: '~5', l: '分钟完成' },
+          ].map((s) => (
+            <div key={s.l} className="text-center py-2.5 glass rounded-xl">
+              <div className="text-lg font-bold font-mono text-foreground/80">{s.n}</div>
+              <div className="text-[10px] text-muted mt-0.5">{s.l}</div>
             </div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* ── Description ── */}
-        <p className="text-sm text-muted leading-relaxed max-w-sm mt-7">
-          基于五大模型、15个维度的交叉匹配，每次从题库中随机抽取30道题，找到属于你的那个不太正经的人格标签。
-        </p>
-
-        {/* ── Stats row ── */}
-        <div className="flex items-center gap-6 mt-6">
-          <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">15</div>
-            <div className="text-[10px] text-muted mt-0.5">测试维度</div>
-          </div>
-          <div className="w-px h-8 bg-divider" />
-          <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">40+</div>
-            <div className="text-[10px] text-muted mt-0.5">人格类型</div>
-          </div>
-          <div className="w-px h-8 bg-divider" />
-          <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">100+</div>
-            <div className="text-[10px] text-muted mt-0.5">随机题库</div>
-          </div>
-          <div className="w-px h-8 bg-divider" />
-          <div className="text-center">
-            <div className="text-xl font-bold font-mono text-foreground/80">~5</div>
-            <div className="text-[10px] text-muted mt-0.5">分钟完成</div>
-          </div>
-        </div>
-
-        {/* ── CTA ── */}
-        <button
+        {/* CTA */}
+        <motion.button
+          variants={fadeUp}
           onClick={onStart}
-          className="
-            mt-9 relative px-12 py-4 rounded-full
-            bg-accent text-white font-medium text-base
-            transition-all duration-300
-            hover:bg-accent-dim hover:shadow-[0_0_32px_var(--glow)]
-            hover:scale-[1.04] active:scale-100
-            cursor-pointer
-          "
+          className="mt-8 px-14 py-4 rounded-full bg-accent text-white font-medium text-base cursor-pointer"
+          whileHover={{ scale: 1.04, boxShadow: '0 0 32px var(--glow)' }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         >
           开始测试
-        </button>
+        </motion.button>
 
-        {/* ── Bottom ── */}
-        <div className="mt-8 pt-6 border-t border-divider w-full max-w-sm space-y-2 text-center">
-          <p className="text-xs text-muted">
-            仅供娱乐 · 不具备任何科学依据
-          </p>
+        {/* footer */}
+        <motion.div variants={fadeUp} className="mt-10 pt-5 border-t border-divider w-full space-y-1.5 text-center">
+          <p className="text-xs text-muted">仅供娱乐 · 不具备任何科学依据</p>
           <p className="text-[11px] text-muted/80 leading-relaxed">
-            SBTI 原作者 B站@Q肉儿串儿，NTTI 基于 SBTI 体系、题库和人格改进优化而成
+            SBTI 原作者 B站@Q肉儿串儿，NTTI 基于 SBTI 体系改进优化
           </p>
           <p className="text-[11px] text-muted/60 flex items-center justify-center gap-1">
             Powered by
-            <svg className="w-3 h-3 inline-block" viewBox="0 0 32 32" fill="currentColor">
+            <svg className="w-3 h-3" viewBox="0 0 32 32" fill="currentColor">
               <path d="M17.87 13.47l-12.65 5.6a1.16 1.16 0 01-.47.1 1.08 1.08 0 01-.72-.27 1.15 1.15 0 01-.36-1.1l2.17-9.43a3.24 3.24 0 012.88-2.5l12.33-1.03a.53.53 0 01.42.15.56.56 0 01.14.43l-.52 5.15a3.24 3.24 0 01-3.22 2.9z" />
               <path d="M28.93 13.67L16.6 14.7a3.24 3.24 0 00-2.88 2.5L11.55 26.63a1.15 1.15 0 00.36 1.1 1.08 1.08 0 001.19.17l12.65-5.6a3.24 3.24 0 001.96-2.47l.52-5.15a.56.56 0 00-.14-.43.53.53 0 00-.42-.15l-.74.06z" />
             </svg>
             Cloudflare Pages
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

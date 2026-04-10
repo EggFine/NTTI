@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { DimensionId, DimensionLevel } from '@/lib/types';
 import { MODELS, DIMENSION_MAP } from '@/lib/data/dimensions';
 
@@ -21,19 +22,12 @@ const LEVEL_TEXT: Record<DimensionLevel, string> = {
   H: 'text-accent-dim dark:text-accent-light',
 };
 
-const LEVEL_BAR_W: Record<DimensionLevel, string> = {
-  L: 'w-[30%]',
-  M: 'w-[60%]',
-  H: 'w-[92%]',
-};
-
 const LEVEL_BAR_COLOR: Record<DimensionLevel, string> = {
   L: 'bg-sky-500/50 dark:bg-sky-400/40',
   M: 'bg-warm/50 dark:bg-warm/40',
   H: 'bg-accent/60 dark:bg-accent/40',
 };
 
-// Short labels for grid cells
 const SHORT_NAMES: Record<DimensionId, string> = {
   S1: '自尊', S2: '清晰度', S3: '价值观',
   E1: '安全感', E2: '投入度', E3: '边界',
@@ -45,97 +39,109 @@ const SHORT_NAMES: Record<DimensionId, string> = {
 export function DimensionChart({ levels, rawScores }: DimensionChartProps) {
   const [expandedDim, setExpandedDim] = useState<DimensionId | null>(null);
 
+  let cellIndex = 0;
+
   return (
-    <div className="space-y-4">
-      {/* ── Compact 5-column grid ── */}
-      <div className="grid grid-cols-5 gap-2 md:gap-3">
-        {/* Column headers */}
-        {MODELS.map(model => (
-          <div key={model.id} className="text-center mb-1">
-            <span className="text-[10px] md:text-xs font-medium text-muted tracking-wide">
+    <div className="space-y-3">
+      <div className="grid grid-cols-5 gap-2">
+        {/* column headers */}
+        {MODELS.map((model, mi) => (
+          <motion.div
+            key={model.id}
+            className="text-center py-1.5"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: mi * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+          >
+            <span className="text-[10px] md:text-xs font-medium text-muted">
               {model.name.replace('模型', '')}
             </span>
-          </div>
+          </motion.div>
         ))}
 
-        {/* 3 rows × 5 columns = 15 dimension cells */}
+        {/* 3 rows x 5 columns */}
         {[0, 1, 2].map(row =>
           MODELS.map(model => {
             const dimId = model.dimensions[row];
-            const dim = DIMENSION_MAP[dimId];
             const level = levels[dimId];
             const score = rawScores[dimId];
             const isExpanded = expandedDim === dimId;
+            const idx = cellIndex++;
 
             return (
-              <button
+              <motion.button
                 key={dimId}
                 type="button"
                 onClick={() => setExpandedDim(isExpanded ? null : dimId)}
                 className={`
-                  dim-cell relative glass rounded-xl p-2.5 md:p-3
-                  transition-all duration-200 cursor-pointer text-left
-                  hover:border-accent/30
-                  ${isExpanded ? 'ring-1 ring-accent/30 border-accent/20' : ''}
+                  glass rounded-xl p-2.5 cursor-pointer text-left
+                  border transition-colors duration-150 hover:border-accent/25
+                  ${isExpanded ? 'ring-1 ring-accent/25 border-accent/15' : 'border-transparent'}
                 `}
+                initial={{ opacity: 0, scale: 0.88 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.06 + idx * 0.03, type: 'spring', stiffness: 350, damping: 25 }}
+                whileHover={{ y: -1.5 }}
+                whileTap={{ scale: 0.97 }}
               >
-                {/* Dim short name */}
-                <div className="text-[10px] md:text-xs text-muted mb-1.5 truncate">
+                {/* name */}
+                <div className="text-[10px] text-muted mb-1.5 truncate leading-none">
                   {SHORT_NAMES[dimId]}
                 </div>
 
-                {/* Level badge */}
-                <div className={`
-                  inline-flex items-center justify-center
-                  w-7 h-7 md:w-8 md:h-8 rounded-lg
-                  text-xs md:text-sm font-bold
-                  ${LEVEL_BG[level]} ${LEVEL_TEXT[level]}
-                `}>
-                  {level}
+                {/* level + score inline */}
+                <div className="flex items-center justify-between">
+                  <span className={`
+                    inline-flex items-center justify-center w-7 h-7 rounded-lg
+                    text-xs font-bold ${LEVEL_BG[level]} ${LEVEL_TEXT[level]}
+                  `}>
+                    {level}
+                  </span>
+                  <span className="text-[10px] text-muted/70 font-mono">{score}</span>
                 </div>
 
-                {/* Mini bar */}
-                <div className="w-full h-1 bg-bar-track rounded-full mt-2 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-700 ${LEVEL_BAR_W[level]} ${LEVEL_BAR_COLOR[level]}`} />
+                {/* bar */}
+                <div className="w-full h-[3px] bg-bar-track rounded-full mt-2 overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${LEVEL_BAR_COLOR[level]}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: level === 'L' ? '30%' : level === 'M' ? '60%' : '92%' }}
+                    transition={{ delay: 0.25 + idx * 0.03, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  />
                 </div>
-
-                {/* Score */}
-                <div className="text-[9px] text-muted/60 font-mono mt-1 text-right">
-                  {score}分
-                </div>
-              </button>
+              </motion.button>
             );
           })
         )}
       </div>
 
-      {/* ── Expanded explanation panel ── */}
-      {expandedDim && (() => {
-        const dim = DIMENSION_MAP[expandedDim];
-        const level = levels[expandedDim];
-        return (
-          <div className="glass rounded-xl p-4 animate-scale-in">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground/80">
-                {dim.name}
-              </span>
-              <span className={`
-                inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-bold
-                ${LEVEL_BG[level]} ${LEVEL_TEXT[level]}
-              `}>
-                {level} · {rawScores[expandedDim]}分
-              </span>
-            </div>
-            <p className="text-sm text-muted leading-relaxed">
-              {dim.levels[level]}
-            </p>
-          </div>
-        );
-      })()}
+      {/* expanded panel */}
+      <AnimatePresence mode="wait">
+        {expandedDim && (() => {
+          const dim = DIMENSION_MAP[expandedDim];
+          const level = levels[expandedDim];
+          return (
+            <motion.div
+              key={expandedDim}
+              className="glass rounded-xl p-4"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground/80">{dim.name}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${LEVEL_BG[level]} ${LEVEL_TEXT[level]}`}>
+                  {level} · {rawScores[expandedDim]}分
+                </span>
+              </div>
+              <p className="text-sm text-muted leading-relaxed">{dim.levels[level]}</p>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
-      <p className="text-[11px] text-muted/70 text-center">
-        点击维度格子查看解读
-      </p>
+      <p className="text-[11px] text-muted/70 text-center pt-1">点击格子查看维度解读</p>
     </div>
   );
 }
