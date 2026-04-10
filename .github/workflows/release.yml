@@ -2,13 +2,13 @@ name: Build & Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v1.0.0)'
-        required: true
+        description: 'Release tag override (e.g. v1.0.0). Leave empty to auto-generate.'
+        required: false
 
 permissions:
   contents: write
@@ -34,10 +34,11 @@ jobs:
       - name: Determine version tag
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
             echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
           else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            TAG="v$(date -u +%Y%m%d)-$(echo $GITHUB_SHA | head -c 7)"
+            echo "tag=${TAG}" >> $GITHUB_OUTPUT
           fi
 
       - name: Package build output
