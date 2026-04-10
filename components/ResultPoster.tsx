@@ -83,9 +83,7 @@ export const ResultPoster = forwardRef<HTMLDivElement, ResultPosterProps>(
             fontWeight: 700,
             fontStyle: 'italic',
             fontFamily: 'Georgia, serif',
-            background: 'linear-gradient(135deg, #0d9488, #14b8a6, #d97706)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: t.accent,
             lineHeight: 1.1,
           }}>
             {finalType.code}

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Noto_Sans_SC, Geist_Mono, Instrument_Serif } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const notoSansSC = Noto_Sans_SC({
@@ -38,14 +37,14 @@ export default function RootLayout({
       className={`${notoSansSC.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col relative">
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
+      <head suppressHydrationWarning>
+        <script
           dangerouslySetInnerHTML={{
             __html: `try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
           }}
         />
+      </head>
+      <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
         {children}
       </body>
     </html>

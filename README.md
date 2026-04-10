@@ -45,6 +45,7 @@
 - **概率化评分** — 7级概率分布 + 维度加权匹配
 - **一致性检测** — 矛盾作答自动补题，提高结果准确性
 - **选项随机化** — ABC 顺序每题打乱，防止默认偏向
+- **人格图鉴** — 收集解锁的人格，网格展示进度，新解锁有特效
 - **分享二维码** — 签名防伪结果链接
 - **结果海报** — 亮/暗双主题，含二维码，保存到相册
 - **明暗主题** — 默认亮色，支持切换
@@ -80,11 +81,13 @@ app/
   layout.tsx            # 根布局（字体、主题）
   globals.css           # Tailwind v4 主题 + 动画
   r/page.tsx            # 分享结果页（/r?d=...&s=...）
+  codex/page.tsx        # 人格图鉴页
 
 lib/
   types.ts              # TypeScript 类型
   scoring.ts            # 概率化评分 + 加权匹配 + 一致性检测
   share.ts              # 分享链接编码/解码/签名
+  codex.ts              # 人格图鉴 localStorage 存储
   utils.ts              # 工具函数
   data/
     questions.ts        # 题库（每维度 6-7 题）
@@ -92,8 +95,9 @@ lib/
     dimensions.ts       # 15 维度元数据
 
 components/
-  TestApp.tsx           # 主控状态机 + 附加轮循环
-  IntroScreen.tsx       # 首页（粒子背景 + 扫码入口）
+  TestApp.tsx           # 主控状态机 + 附加轮 + 解锁检测
+  IntroScreen.tsx       # 首页（粒子背景 + 扫码 + 图鉴入口）
+  CodexView.tsx         # 人格图鉴（网格 + 解锁进度 + 详情查看）
   TestScreen.tsx        # 答题流程 + 附加题提示
   ResultScreen.tsx      # 结果页（海报 + 分享）
   SharedResultView.tsx  # 分享结果查看页
