@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import type { Question, SpecialQuestion, QuestionOption } from '@/lib/types';
 import { shuffle } from '@/lib/utils';
@@ -16,12 +16,24 @@ interface QuestionCardProps {
 const OPTION_CODES = ['A', 'B', 'C', 'D'];
 
 export function QuestionCard({ question, index, total, selected, onSelect }: QuestionCardProps) {
-  // Shuffle option display order once per question (stable via useMemo keyed on id)
   const shuffledOptions = useMemo<QuestionOption[]>(
     () => shuffle(question.options),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [question.id],
   );
+
+  // Keyboard shortcuts — uses shuffled order so A/B/C matches display
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const key = e.key.toUpperCase();
+      const idx = 'ABCD'.indexOf(key);
+      if (idx >= 0 && idx < shuffledOptions.length && selected === undefined) {
+        onSelect(shuffledOptions[idx].value);
+      }
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [shuffledOptions, selected, onSelect]);
 
   return (
     <motion.div
@@ -31,19 +43,16 @@ export function QuestionCard({ question, index, total, selected, onSelect }: Que
       exit={{ opacity: 0, x: -50, scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 280, damping: 28 }}
     >
-      {/* header */}
       <div className="flex items-center gap-3 mb-5">
         <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-accent/10 text-accent text-xs font-medium font-mono">
           {index + 1} / {total}
         </span>
       </div>
 
-      {/* question text */}
       <h2 className="text-base md:text-lg font-medium leading-relaxed mb-7 text-foreground/85">
         {question.text}
       </h2>
 
-      {/* options (shuffled) */}
       <div className="flex flex-col gap-2.5">
         {shuffledOptions.map((opt, i) => {
           const isSelected = selected === opt.value;

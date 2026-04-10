@@ -80,20 +80,7 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
     }, 400);
   }, [currentQuestion, currentIndex, questions, answers, onComplete, goTo]);
 
-  // keyboard shortcuts
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (!currentQuestion) return;
-      const opts = currentQuestion.options;
-      const key = e.key.toUpperCase();
-      const idx = 'ABCD'.indexOf(key);
-      if (idx >= 0 && idx < opts.length && answers[currentQuestion.id] === undefined) {
-        handleSelect(opts[idx].value);
-      }
-    }
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [currentQuestion, answers, handleSelect]);
+  // keyboard shortcuts moved to QuestionCard (knows shuffled order)
 
   if (!currentQuestion) return null;
 
