@@ -238,7 +238,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           variants={fadeUp}
           className="text-sm text-muted leading-relaxed mt-6 px-2"
         >
-          基于五大模型、15个维度交叉匹配，每次从题库中随机抽取30道题，找到属于你的那个不太正经的人格标签。
+          基于五大模型、15个维度交叉匹配，每次从题库中随机抽取45道题，找到属于你的那个不太正经的人格标签。
         </motion.p>
 
         {/* stats */}
@@ -250,7 +250,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             { n: "15", l: "测试维度" },
             { n: "40+", l: "人格类型" },
             { n: "100+", l: "随机题库" },
-            { n: "~5", l: "分钟完成" },
+            { n: "~8", l: "分钟完成" },
           ].map((s) => (
             <div key={s.l} className="text-center py-2.5 glass rounded-xl">
               <div className="text-base sm:text-lg font-bold font-mono text-foreground/80">
