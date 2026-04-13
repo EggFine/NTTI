@@ -176,4 +176,4 @@ NTTI 基于 SBTI 体系、题库和人格改进优化而成。
 
 ## License
 
-MIT
+[Apache License 2.0](./LICENSE)

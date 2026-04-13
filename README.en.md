@@ -176,4 +176,4 @@ You can also trigger manually from the Actions tab with a custom version tag.
 
 ## License
 
-MIT
+[Apache License 2.0](./LICENSE)
