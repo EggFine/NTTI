@@ -38,7 +38,7 @@
 
 ### 4. 语言切换
 
-`LanguageSwitcher` 使用 `useSearchParams` 读取当前查询字符串。切换语言时只替换路径中的语言前缀，并原样保留所有查询参数；无查询参数时不添加多余问号。
+`LanguageSwitcher` 在点击时读取 `window.location.search`，并通过纯函数构造目标 URL。切换语言时只替换路径中的语言前缀，并原样保留所有查询参数；无查询参数时不添加多余问号。该方案避免 `useSearchParams` 在静态路由中引入额外的 `Suspense` 边界。
 
 ### 5. 分享载荷校验
 

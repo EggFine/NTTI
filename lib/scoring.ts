@@ -1,4 +1,4 @@
-import type { DimensionId, DimensionLevel, Question, SpecialQuestion, PersonalityType, RankedType, TestResult } from './types';
+import type { DimensionId, DimensionLevel, Question, SpecialQuestion, RankedType, TestResult } from './types';
 import { DIMENSION_IDS } from './data/dimensions';
 import { shuffle, selectRandom } from './utils';
 import type { Dictionary } from './i18n';
@@ -50,11 +50,14 @@ export function buildExtraQuestions(
   answers: Record<string, number>,
   allSessionQuestions: (Question | SpecialQuestion)[],
   data: LocaleData,
+  supplementedDimensions: ReadonlySet<DimensionId> = new Set(),
 ): Question[] {
   const extras: Question[] = [];
   const usedIds = new Set(allSessionQuestions.map(q => q.id));
 
   for (const dim of DIMENSION_IDS) {
+    if (supplementedDimensions.has(dim)) continue;
+
     // Gather scores for this dimension
     const dimScores: number[] = [];
     for (const q of allSessionQuestions) {
@@ -103,6 +106,12 @@ function getProbs(score: number): [number, number, number] {
   return SCORE_PROB[clamped] || [0.33, 0.34, 0.33];
 }
 
+/** Normalize any number of answers back to the original three-question score range. */
+export function normalizeRawScore(total: number, count: number): number {
+  if (count <= 0) return 3;
+  return Math.max(3, Math.min(9, Math.round((total / count) * QUESTIONS_PER_DIM)));
+}
+
 /** Compute expected distance between a probabilistic user dim and a fixed type level */
 function expectedDimDistance(userProbs: [number, number, number], typeLevel: DimensionLevel): number {
   const tn = LEVEL_NUM[typeLevel];
@@ -131,14 +140,22 @@ export function computeResult(
   dict: Dictionary,
 ): TestResult {
   // 1. Raw scores per dimension
-  const rawScores = {} as Record<DimensionId, number>;
+  const rawTotals = {} as Record<DimensionId, number>;
+  const answerCounts = {} as Record<DimensionId, number>;
   for (const dim of DIMENSION_IDS) {
-    rawScores[dim] = 0;
+    rawTotals[dim] = 0;
+    answerCounts[dim] = 0;
   }
   for (const q of sessionQuestions) {
     if ('dim' in q && answers[q.id] !== undefined) {
-      rawScores[q.dim] += answers[q.id];
+      rawTotals[q.dim] += answers[q.id];
+      answerCounts[q.dim] += 1;
     }
+  }
+
+  const rawScores = {} as Record<DimensionId, number>;
+  for (const dim of DIMENSION_IDS) {
+    rawScores[dim] = normalizeRawScore(rawTotals[dim], answerCounts[dim]);
   }
 
   // 2. Probability distributions per dimension

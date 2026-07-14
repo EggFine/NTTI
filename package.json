@@ -6,6 +6,7 @@
     "build": "next build --webpack",
     "dev": "next dev",
     "start": "next start",
+    "test": "tsc -p tsconfig.tests.json && node --test .test-dist/tests/*.test.js",
     "lint": "eslint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

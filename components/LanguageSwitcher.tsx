@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useI18n } from '@/lib/i18n/context';
 import { locales } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { buildLocaleUrl } from '@/lib/locale-url';
 
 export function LanguageSwitcher() {
   const { locale, dict } = useI18n();
@@ -15,8 +16,7 @@ export function LanguageSwitcher() {
   function switchTo() {
     // Persist choice so proxy remembers it on next visit
     document.cookie = `NEXT_LOCALE=${other};path=/;max-age=${365 * 24 * 60 * 60};SameSite=Lax`;
-    const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}/, '');
-    window.location.href = `/${other}${pathWithoutLocale || '/'}`;
+    window.location.href = buildLocaleUrl(pathname, other, window.location.search);
   }
 
   return (

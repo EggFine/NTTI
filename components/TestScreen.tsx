@@ -6,6 +6,7 @@ import type { Question, SpecialQuestion } from '@/lib/types';
 import { useI18n } from '@/lib/i18n/context';
 import { t as tpl } from '@/lib/i18n';
 import { getLocaleData } from '@/lib/data/locale';
+import { applySessionAnswer } from '@/lib/test-flow';
 import { ProgressBar } from './ProgressBar';
 import { QuestionCard } from './QuestionCard';
 
@@ -36,33 +37,22 @@ export function TestScreen({ questions: initialQuestions, onComplete, extraPromp
   const handleSelect = useCallback((value: number) => {
     if (!currentQuestion) return;
 
-    const newAnswers = { ...answers, [currentQuestion.id]: value };
-    setAnswers(newAnswers);
-
-    if (currentQuestion.id === 'drink_gate_q1' && value === 3) {
-      const trigger = data.specialQuestions.find(q => q.kind === 'drink_trigger');
-      if (trigger && !questions.some(q => q.id === trigger.id)) {
-        const updated = [...questions];
-        updated.splice(currentIndex + 1, 0, trigger);
-        setQuestions(updated);
-      }
-    }
-
-    if (currentQuestion.id === 'drink_gate_q1' && value !== 3) {
-      const triggerIdx = questions.findIndex(q => q.id === 'drink_gate_q2');
-      if (triggerIdx !== -1) {
-        const updated = [...questions];
-        updated.splice(triggerIdx, 1);
-        setQuestions(updated);
-        delete newAnswers['drink_gate_q2'];
-      }
-    }
+    const transition = applySessionAnswer(
+      currentQuestion,
+      currentIndex,
+      questions,
+      answers,
+      data.specialQuestions,
+      value,
+    );
+    setAnswers(transition.answers);
+    setQuestions(transition.questions);
 
     setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        goTo(currentIndex + 1);
+      if (transition.nextIndex !== null) {
+        goTo(transition.nextIndex);
       } else {
-        onComplete(newAnswers, questions);
+        onComplete(transition.answers, transition.questions);
       }
     }, 400);
   }, [currentQuestion, currentIndex, questions, answers, onComplete, goTo, data.specialQuestions]);
