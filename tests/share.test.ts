@@ -75,6 +75,23 @@ test('accepts a valid existing share payload', () => {
   assert.equal(decoded?.exact, 8);
 });
 
+test('accepts valid special share payloads', () => {
+  for (const typeCode of ['DRUNK', 'HHHH']) {
+    const [data, signature] = encodePayload({
+      t: typeCode,
+      s: 72,
+      l: 'M'.repeat(15),
+      e: 8,
+      x: 1,
+    });
+
+    const decoded = decodeShareUrl(data, signature);
+
+    assert.equal(decoded?.typeCode, typeCode);
+    assert.equal(decoded?.special, true);
+  }
+});
+
 test('rejects checksummed payloads with invalid similarity values', () => {
   assert.equal(roundTrip(makeResult({ similarity: -1 })), null);
   assert.equal(roundTrip(makeResult({ similarity: 101 })), null);
