@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildExtraQuestions, normalizeRawScore } from '../lib/scoring';
+import { buildExtraQuestions, computeResult, normalizeRawScore } from '../lib/scoring';
 import type { LocaleData } from '../lib/data/locale';
+import type { Dictionary } from '../lib/i18n';
 import type { DimensionId, Question } from '../lib/types';
 
 function question(id: string, dim: DimensionId): Question {
@@ -28,6 +29,27 @@ function localeData(questionBank: Record<string, Question[]>): LocaleData {
     models: [],
     dimensionMap: {} as LocaleData['dimensionMap'],
   };
+}
+
+function scoringDictionary(): Dictionary {
+  return {
+    scoring: {
+      extraPromptFirst: '',
+      extraPromptRest: [],
+      modeKickerPrimary: 'primary',
+      modeKickerHidden: 'hidden',
+      modeKickerFallback: 'fallback',
+      modeKickerCodex: 'codex',
+      badgeNormal: '{sim}/{exact}',
+      badgeDrunk: 'drunk',
+      badgeFallback: '{sim}',
+      badgeCodex: 'codex',
+      subNormal: '',
+      subDrunk: '',
+      subFallback: '',
+      subCodex: '',
+    },
+  } as unknown as Dictionary;
 }
 
 test('adds one unused question for an inconsistent unsupplemented dimension', () => {
@@ -64,4 +86,22 @@ test('normalizes any answer count back to the three-question scale', () => {
   assert.equal(normalizeRawScore(9, 7), 4);
   assert.equal(normalizeRawScore(21, 7), 9);
   assert.equal(normalizeRawScore(0, 0), 3);
+});
+
+test('computeResult uses normalized scores for supplemental answers', () => {
+  const questions = Array.from({ length: 7 }, (_, index) =>
+    question(`S1_q${index + 1}`, 'S1'),
+  );
+  const answers = Object.fromEntries(
+    questions.map((item, index) => [item.id, index < 2 ? 2 : 1]),
+  );
+  const data = localeData({ S1: questions });
+  data.personalityTypes = [{
+    code: 'LOW', cn: '', intro: '', desc: '', pattern: 'LLL-LLL-LLL-LLL-LLL',
+  }];
+
+  const result = computeResult(answers, questions, data, scoringDictionary());
+
+  assert.equal(result.rawScores.S1, 4);
+  assert.equal(result.levels.S1, 'L');
 });
