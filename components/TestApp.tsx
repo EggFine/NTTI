@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { Screen, Question, SpecialQuestion, TestResult } from '@/lib/types';
+import type { Screen, DimensionId, Question, SpecialQuestion, TestResult } from '@/lib/types';
 import { buildSession, buildExtraQuestions, computeResult } from '@/lib/scoring';
 import { selectRandom } from '@/lib/utils';
 import { addUnlocked } from '@/lib/codex';
@@ -28,6 +28,7 @@ export function TestApp() {
   const [extraRound, setExtraRound] = useState(0);
   const [extraPrompt, setExtraPrompt] = useState('');
   const [newUnlock, setNewUnlock] = useState(false);
+  const supplementedDimensions = useRef<Set<DimensionId>>(new Set());
 
   const handleStart = useCallback(() => {
     const questions = buildSession(data);
@@ -38,6 +39,7 @@ export function TestApp() {
     setNewUnlock(false);
     setExtraRound(0);
     setExtraPrompt('');
+    supplementedDimensions.current.clear();
     setScreen('test');
     window.scrollTo({ top: 0 });
   }, [data]);
@@ -54,9 +56,17 @@ export function TestApp() {
     }
     setAllQuestions(mergedQuestions);
 
-    const extras = buildExtraQuestions(mergedAnswers, mergedQuestions, data);
+    const extras = buildExtraQuestions(
+      mergedAnswers,
+      mergedQuestions,
+      data,
+      supplementedDimensions.current,
+    );
 
     if (extras.length > 0) {
+      for (const extra of extras) {
+        supplementedDimensions.current.add(extra.dim);
+      }
       const nextRound = extraRound + 1;
       setExtraRound(nextRound);
       if (nextRound === 1) {

@@ -1,11 +1,11 @@
 import type { DimensionId, DimensionLevel, TestResult } from './types';
 import { DIMENSION_IDS } from './data/dimensions';
 
-const SECRET = 'ntti-2024-jade-oracle';
+const CHECKSUM_SALT = 'ntti-2024-jade-oracle';
 
-/** Simple hash for signing — djb2 + xor fold to 8 hex chars */
-function sign(data: string): string {
-  const raw = data + ':' + SECRET;
+/** Client-visible checksum for detecting damaged links, not a security signature. */
+function checksum(data: string): string {
+  const raw = data + ':' + CHECKSUM_SALT;
   let h1 = 5381;
   let h2 = 52711;
   for (let i = 0; i < raw.length; i++) {
@@ -51,7 +51,7 @@ export function encodeShareUrl(result: TestResult, baseUrl: string, locale: stri
   };
 
   const data = toBase64Url(JSON.stringify(payload));
-  const sig = sign(data);
+  const sig = checksum(data);
 
   const url = new URL(`/${locale}/r`, baseUrl);
   url.searchParams.set('d', data);
@@ -67,19 +67,34 @@ export interface DecodedShare {
   special: boolean;
 }
 
-/** Decode and verify a share URL. Returns null if invalid/tampered. */
+/** Decode and validate a share URL. Returns null if malformed or damaged. */
 export function decodeShareUrl(d: string, s: string): DecodedShare | null {
-  // verify signature
-  const expectedSig = sign(d);
+  const expectedSig = checksum(d);
   if (s !== expectedSig) return null;
 
   try {
     const json = fromBase64Url(d);
     const payload: SharePayload = JSON.parse(json);
 
-    if (!payload.t || typeof payload.s !== 'number' || !payload.l || payload.l.length !== 15) {
+    if (
+      typeof payload.t !== 'string'
+      || payload.t.length < 1
+      || payload.t.length > 16
+      || !Number.isInteger(payload.s)
+      || payload.s < 0
+      || payload.s > 100
+      || typeof payload.l !== 'string'
+      || payload.l.length !== 15
+      || !Number.isInteger(payload.e)
+      || payload.e < 0
+      || payload.e > 15
+      || (payload.x !== 0 && payload.x !== 1)
+    ) {
       return null;
     }
+
+    const isSpecialType = payload.t === 'DRUNK' || payload.t === 'HHHH';
+    if ((payload.x === 1) !== isSpecialType) return null;
 
     const levels = {} as Record<DimensionId, DimensionLevel>;
     for (let i = 0; i < 15; i++) {
@@ -92,7 +107,7 @@ export function decodeShareUrl(d: string, s: string): DecodedShare | null {
       typeCode: payload.t,
       similarity: payload.s,
       levels,
-      exact: payload.e || 0,
+      exact: payload.e,
       special: payload.x === 1,
     };
   } catch {
