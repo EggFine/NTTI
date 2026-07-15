@@ -71,3 +71,18 @@ test('removes a prior follow-up and its answer when the gate answer changes', ()
   assert.deepEqual(transition.questions.map(item => item.id), ['drink_gate_q1', 'S1_q1']);
   assert.equal('drink_gate_q2' in transition.answers, false);
 });
+
+test('completes an ordinary final question with the updated answer snapshot', () => {
+  const transition = applySessionAnswer(
+    regularQuestion,
+    0,
+    [regularQuestion],
+    {},
+    [gate, trigger],
+    1,
+  );
+
+  assert.equal(transition.nextIndex, null);
+  assert.equal(transition.answers.S1_q1, 1);
+  assert.deepEqual(transition.questions, [regularQuestion]);
+});
