@@ -67,6 +67,29 @@ test('adds one unused question for an inconsistent unsupplemented dimension', ()
   assert.deepEqual(result.map(item => item.id), ['S1_q4']);
 });
 
+test('adds one unused question for each inconsistent unsupplemented dimension', () => {
+  const usedS1 = [question('S1_q1', 'S1'), question('S1_q2', 'S1'), question('S1_q3', 'S1')];
+  const usedS2 = [question('S2_q1', 'S2'), question('S2_q2', 'S2'), question('S2_q3', 'S2')];
+  const answers = {
+    S1_q1: 1, S1_q2: 2, S1_q3: 3,
+    S2_q1: 3, S2_q2: 2, S2_q3: 1,
+  };
+
+  const result = buildExtraQuestions(
+    answers,
+    [...usedS1, ...usedS2],
+    localeData({
+      S1: [...usedS1, question('S1_q4', 'S1')],
+      S2: [...usedS2, question('S2_q4', 'S2')],
+    }),
+    new Set<DimensionId>(),
+  );
+
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(item => item.dim).sort(), ['S1', 'S2']);
+  assert.deepEqual(result.map(item => item.id).sort(), ['S1_q4', 'S2_q4']);
+});
+
 test('does not add another question for a supplemented dimension', () => {
   const used = [question('S1_q1', 'S1'), question('S1_q2', 'S1'), question('S1_q3', 'S1')];
   const answers = { S1_q1: 1, S1_q2: 2, S1_q3: 3 };

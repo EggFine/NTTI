@@ -104,6 +104,18 @@ test('rejects checksummed payloads with invalid exact-match counts', () => {
   assert.equal(roundTrip(makeResult({ exact: 7.5 })), null);
 });
 
+test('rejects a checksummed payload with an invalid dimension level', () => {
+  const [data, signature] = encodePayload({
+    t: 'BOSS',
+    s: 72,
+    l: `${'M'.repeat(14)}X`,
+    e: 8,
+    x: 0,
+  });
+
+  assert.equal(decodeShareUrl(data, signature), null);
+});
+
 test('rejects empty and oversized type codes', () => {
   assert.equal(roundTrip(makeResult({ typeCode: '' })), null);
   assert.equal(roundTrip(makeResult({ typeCode: 'X'.repeat(17) })), null);
