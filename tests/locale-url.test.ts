@@ -20,3 +20,10 @@ test('preserves repeated and arbitrary parameters in their original order', () =
     '/zh/r?tag=a&tag=b&debug=true',
   );
 });
+
+test('preserves encoded and empty query values byte-for-byte', () => {
+  assert.equal(
+    buildLocaleUrl('/zh/r', 'en', '?d=a%2Bb%2Fc&s=&debug'),
+    '/en/r?d=a%2Bb%2Fc&s=&debug',
+  );
+});
