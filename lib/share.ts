@@ -93,6 +93,9 @@ export function decodeShareUrl(d: string, s: string): DecodedShare | null {
       return null;
     }
 
+    const isSpecialType = payload.t === 'DRUNK' || payload.t === 'HHHH';
+    if ((payload.x === 1) !== isSpecialType) return null;
+
     const levels = {} as Record<DimensionId, DimensionLevel>;
     for (let i = 0; i < 15; i++) {
       const ch = payload.l[i];

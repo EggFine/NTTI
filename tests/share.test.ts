@@ -103,3 +103,15 @@ test('rejects a checksummed payload with an invalid special flag', () => {
 
   assert.equal(decodeShareUrl(data, signature), null);
 });
+
+test('rejects special flags that conflict with the result type', () => {
+  const [normalData, normalChecksum] = encodePayload({
+    t: 'BOSS', s: 72, l: 'M'.repeat(15), e: 8, x: 1,
+  });
+  const [specialData, specialChecksum] = encodePayload({
+    t: 'DRUNK', s: 72, l: 'M'.repeat(15), e: 8, x: 0,
+  });
+
+  assert.equal(decodeShareUrl(normalData, normalChecksum), null);
+  assert.equal(decodeShareUrl(specialData, specialChecksum), null);
+});
